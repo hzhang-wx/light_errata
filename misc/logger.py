@@ -2,10 +2,15 @@
 
 import logging
 
-class OurLogger:
-    logger = logging
-    logging.basicConfig(level=logging.DEBUG)
-    def __init__(self):
-        pass
+class GenLogger:
+	logging.basicConfig(level = logging.DEBUG,
+			format   = '%(asctime)s %(filename)s %(levelname)s %(message)s',
+			datefmt  = '%a, %d %b %Y %H:%M:%S')
 
-logger = OurLogger.logger
+	def __init__(self):
+		pass
+
+	def __getattr__(self, name):
+		return getattr(logging, name)
+
+genLogger = GenLogger()
