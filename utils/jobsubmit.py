@@ -3,10 +3,12 @@ import xmlrpclib
 import re
 import os
 import commands
+import getopt
+import sys
 
 class ErrataInfo:
-	xmlRpc = 'http://errata-xmlrpc.devel.redhat.com/errata/errata_service'
 
+	xmlRpc = 'http://errata-xmlrpc.devel.redhat.com/errata/errata_service'
 	rl2distro = {
 		'RHEL-6.2.Z' : 'RHEL-6.2',
 		'RHEL-6.3.Z' : 'RHEL-6.3',
@@ -15,9 +17,9 @@ class ErrataInfo:
 		'RHEL-5.6.Z' : 'RHEL5-Server-U6'
 	}
 
+	
 	def __init__(self, name):
 		try:
-			self.errataName  = name
 			self.errata = xmlrpclib.ServerProxy(ErrataInfo.xmlRpc)
 			self.errata.ping()
 		except:
@@ -25,7 +27,7 @@ class ErrataInfo:
 			exit(1)
 
 		packages = self.errata.get_base_packages_rhts(self.errataName)
-		genLogger.debug("errata packages     : %s" %packages)
+		genLogger.debug("errata packages    : %s" %packages)
 
 		self.rhel_version = packages[0]['rhel_version']
 		self.version = packages[0]['version']
@@ -44,21 +46,20 @@ class ErrataInfo:
 			    '--retention_tag="120days" '\
 			    '--distro=%s ' %self.distro
 		arch = ''
-		if self.major == 5 and self.minor == 3:
-			arch = '--arch=i386 --arch=x86_64 --arch=ia64 '
-		elif self.major == 5:
+		if self.major == 5:
 			arch = '--arch=i386 --arch=x86_64 --arch=ppc64 --arch=ia64 --arch=s390x'
 		if arch:
+			self.bkrfj = self.bkrcommon
 			self.bkrcommon = "%s %s" %(self.bkrcommon, arch)
 
-		genLogger.info("rhel_version         : %s" %self.rhel_version)	
-		genLogger.info("kernel_version       : %s" %self.version)	
-		genLogger.debug("kernel major        : %s" %self.major)	
-		genLogger.debug("kernel minor        : %s" %self.minor)	
-		genLogger.debug("zflag               : %s" %self.zflag)	
-		genLogger.info("last_kernel_version  : %s" %self.lversion)	
-		genLogger.info("distro               : %s" %self.distro)	
-		genLogger.debug("bkr common cmd      : %s" %self.bkrcommon)	
+		genLogger.info("rhel_version        : %s" %self.rhel_version)	
+		genLogger.info("kernel_version      : %s" %self.version)	
+		genLogger.debug("kernel major       : %s" %self.major)	
+		genLogger.debug("kernel minor       : %s" %self.minor)	
+		genLogger.debug("zflag              : %s" %self.zflag)	
+		genLogger.info("last_kernel_version : %s" %self.lversion)	
+		genLogger.info("distro              : %s" %self.distro)	
+		genLogger.debug("bkr common cmd     : %s" %self.bkrcommon)	
 	
 	def __findLastErrata(self):
 		errataLists = self.errata.get_advisory_list(\
@@ -71,9 +72,9 @@ class ErrataInfo:
 				find_cur_errata = 1
 				self.errataName = errata['advisory_name']
 				self.errataId   = errata['errata_id']
-				genLogger.info("errataName           : %s" %self.errataName)
-				genLogger.info("errataId             : %s" %self.errataId)
-				genLogger.debug("Find current errata : %s" %self.errataName)
+				genLogger.info("errataName          : %s" %self.errataName)
+				genLogger.info("errataId            : %s" %self.errataId)
+				genLogger.debug("Find current errata: %s" %self.errataName)
 
 			elif find_cur_errata:
 				packages = self.errata.get_base_packages_rhts\
@@ -81,34 +82,68 @@ class ErrataInfo:
 				if packages[0]['rhel_version'] != self.rhel_version:
 					continue
 				for pkg in packages[0]['packages']:
-					if pkg == "kernel" and \
-						packages[0]['rhel_version'] == self.rhel_version:
+					if pkg == "kernel":
 						self.lversion    = packages[0]['version']
 						self.errataLname = errata['advisory_name']
 						self.errataLid   = errata['errata_id']
-						genLogger.info("lastErrataName       : \
-								%s" %self.errataLname)
-						genLogger.info("lastErrataId         : \
-								%s" %self.errataLid)
-						genLogger.info("Find Last errata\
-							: %s" %self.errataName)
-			 			return
-		genLogger.error("ErrataLists         : %s" %errataLists)
+						genLogger.info(\
+						"lastErrataName      : %s" %self.errataLname)
+						genLogger.info(\
+						"lastErrataId        : %s" %self.errataLid)
+						return
+
+		genLogger.error("ErrataLists        : %s" %errataLists)
 		genLogger.error("Can't find Last Errata, Quit!")
 		return 
 
 class JobSubmit(ErrataInfo):
-	def __init__(self, name):
+
+	allTests     = 'tps srpm tier1 tier2 regression fj virt'
+
+	def __init__(self):
+
 		self.jobType2Tested = {
-			'tps'        : 'n',
-			'srpm'       : 'n',
-			'tier1'      : 'n',
-			'tier2'      : 'n',
-			'regression' : 'n',
-			'fj'	     : 'n',
-			'virt'       : 'n',
-		}
-		ErrataInfo.__init__(self, name)
+				'tps'        : 'n',
+				'srpm'       : 'n',
+				'tier1'      : 'n',
+				'tier2'      : 'n',
+				'regression' : 'n',
+				'fj'	     : 'n',
+				'virt'       : 'n',
+			}
+
+		self.type2Tested  = ''
+		self.errataName   = ''
+		self.__parseArgs()
+		ErrataInfo.__init__(self, self.errataName)
+
+	@classmethod
+	def usage(cls):
+		print "Usage: %s -T submitJobs -e errataId [-t "\
+				"[%s] -h]" %(sys.argv[0], cls.allTests)
+		exit(1)
+	
+	def __parseArgs(self):
+		opts,args = getopt.getopt(sys.argv[1:], "T:e:t:h")
+		for opt, arg in opts:
+			if opt == '-h':
+				self.usage()
+			elif opt == '-e':
+				self.errataName = arg
+			elif opt ==  '-t':
+				self.type2Tested = arg
+	
+		if not self.errataName:
+			self.usage()
+	
+		if not self.type2Tested:
+			self.type2Tested = self.allTests
+	
+		self.type2Tested = self.type2Tested.split(' ')
+		for type in self.type2Tested:
+			if type not in self.allTests.split(' '):
+				self.usage()
+			self.jobType2Tested[type] = 'y'
 
 	def submTps(self):
 		genLogger.info("Tps submiting...")
@@ -179,7 +214,7 @@ class JobSubmit(ErrataInfo):
 		wboard = '--whiteboard="Kernel Regression Testing for the Fujitsu Machine for Errata %s" ' %self.errataId
 		version = '--nvr=%s ' %self.version
 		extra = '--arch=ia64 --keyvalue="HOSTNAME=pq0-0.lab.bos.redhat.com"'
-		bkrcommand = "%s %s %s %s %s" %(self.bkrcommon, task, version, wboard, extra)
+		bkrcommand = "%s %s %s %s %s" %(self.bkrfj, task, version, wboard, extra)
 		self.__submbkrShirk(bkrcommand, "Fujitsu")
 
 	def submAll(self):
@@ -198,6 +233,9 @@ class JobSubmit(ErrataInfo):
 		if self.jobType2Tested['virt'] == 'y':
 			self.submVirt()
 
+	def start(self):
+		self.submAll()
+	
 	def __submbkrShirk(self, cmd, type):
 		file = "./%s_tmp.xml" %type
 		cmd_dry = "%s --dryrun > %s" %(cmd, file)
