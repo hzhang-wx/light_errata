@@ -1,0 +1,92 @@
+<!-- -*-django-html-*- -->
+{#- no official eus product for async update #}
+{%- if (dmajor, dminor) in ((5, 9), (6, 4)) %}
+<job retention_tag='active' product='cpe:/o:redhat:enterprise_linux:{{dmajor}}'>
+{%- else %}
+<job retention_tag='active' product='cpe:/o:redhat:rhel_eus:{{dmajor}}.{{dminor}}'>
+{%- endif %}
+    <whiteboard>
+        eus virt - rhel-{{dmajor}}.{{dminor}}.z - {{kver}}
+    </whiteboard>
+    {%- for hyper, arch_entries in hyper_entries.items() %}
+    {%- for arch, cpu_codenames in arch_entries.items() %}
+    {%- for cpu_codename, cpu_entries in cpu_codenames.items() %}
+    <recipeSet>
+        <recipe whiteboard='{{hyper}} - {{arch}} - {{cpu_codename}}'>
+            <autopick random='TRUE'/>
+            <watchdog panic='ignore'/>
+            <distroRequires>
+                <arch value='{{arch}}'/>
+                <tag value='RHEL-{{dmajor}}_{{dminor}}-Z-branch'/>
+                {%- if dmajor >= 6 %}
+                <variant value='Server'/>
+                {%- else %}
+                <family value='RedHatEnterpriseLinuxServer5'/>
+                {%- endif %}
+            </distroRequires>
+            <hostRequires>
+                <system>
+                    <type value='Machine'/>
+                    {#- kvm support lazy memory allocated(?) #}
+                    <memory op='>=' value='{{ 3584 if hyper == "kvm" else varchs[arch].__len__()*3072+512 }}'/>
+                    <arch value='{{arch}}'/>
+                </system>
+                <cpu>
+                    <or>
+                        {%- for cpu in cpu_entries %}
+                        <and>
+                            <vendor value='{{cpu["vendor"]}}'/>
+                            <family value='{{cpu["family"]}}'/>
+                            <model value='{{cpu["model"]}}'/>
+                        </and>
+                        {%- endfor %}
+                    </or>
+                </cpu>
+                {%- if hyper in ('kvm', 'xen-hvm') %}
+                <key_value key='HVM' value='1'/>
+                {%- endif %}
+            </hostRequires>
+
+            {#- RHEL5 ia64 xen-hvm trick #}
+            {%- if dmajor == 5 and arch == 'ia64' and hyper == 'xen-hvm' %}
+            <repos>
+                <repo name='Supplementary' url='http://download.devel.redhat.com/released/RHEL-5-Server-Supplementary/U{{dminor}}/{{arch}}/os/Supplementary/'/>
+            </repos>
+            <packages>
+                <package name='xen-ia64-guest-firmware'/>
+            </packages>
+             {#- trick for bz926045 #}
+            <task name="/distribution/pkginstall" role="STANDALONE">
+		<params>
+                    <param name="PKGARGNAME" value="xen-ia64-guest-firmware"/>
+		</params>
+            </task>
+            {%- endif %}
+
+            <task name='/distribution/install'/>
+            <task name='/distribution/kernelinstall'>
+                <params>
+                    <param name='KERNELARGNAME' value='kernel'/>
+                    <param name='KERNELARGVERSION' value='{{kver}}'/>
+                    <param name='KERNELARGVARIANT' value='{{ {"kvm": "up", "xen-hvm": "xen", "xen-pv": "xen"}[hyper] }}'/>
+                </params>
+            </task>
+            <task name='/virt/va/dom0install'/>
+            <task name='/distribution/virt/install'>
+                <params>
+                    <param name="KILLTIMEOVERRIDE" value="64800"/>{#- run for 18 hours #}
+                </params>
+            </task>
+            <task name='/distribution/virt/start'/>
+
+            {%- for varch in varchs[arch] %}
+            {%- for vcpus, vmem in ((1, 1024), (2, 2048)) %}
+            {%- include 'virt-guest.django.xml' %}
+            {%- endfor %}
+            {%- endfor %}
+        </recipe>
+    </recipeSet>
+    {%- endfor %}
+    {%- endfor %}
+    {%- endfor %}
+</job>
