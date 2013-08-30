@@ -25,16 +25,18 @@ class ErrataInfo:
 			exit(1)
 
 		packages = errata.get_base_packages_rhts(self.errataName)
+		genLogger.debug("errata packages     : %s" %packages)
 		errataLists = errata.get_advisory_list(\
 				{"release": packages[0]['rhel_version'],\
 				"qe_group": "Kernel QE"})
+		genLogger.debug("errata lists: %s" %errataLists)
 		self.errataLname = errataLists[-2]['advisory_name']
 		self.errataLid   = errataLists[-2]['errata_id']
 		self.errataId    = errataLists[-1]['errata_id']
-		genLogger.info("errataName    : %s" %self.errataName)
-		genLogger.info("lastErrataName: %s" %self.errataLname)
-		genLogger.info("errataId      : %s" %self.errataId)
-		genLogger.info("lastErrataId  : %s" %self.errataLid)
+		genLogger.info("errataName           : %s" %self.errataName)
+		genLogger.info("lastErrataName       : %s" %self.errataLname)
+		genLogger.info("errataId             : %s" %self.errataId)
+		genLogger.info("lastErrataId         : %s" %self.errataLid)
 
 		self.rhel_version = packages[0]['rhel_version']
 		self.version = packages[0]['version']
@@ -47,6 +49,7 @@ class ErrataInfo:
 		if int(self.major) == 6 and int(self.minor) == 3:
 			self.zflag = 'EUS'
 		lpackages = errata.get_base_packages_rhts(self.errataLname)
+		genLogger.debug("last errata packages: %s" %lpackages)
 		self.lversion = lpackages[0]['version']
 
 		self.bkrcommon = 'bkr workflow-kernel --prettyxml '\
@@ -61,14 +64,14 @@ class ErrataInfo:
 		if arch:
 			self.bkrcommon = "%s %s" %(self.bkrcommon, arch)
 
-		genLogger.info("rhel_version       : %s" %self.rhel_version)	
-		genLogger.info("kernel_version     : %s" %self.version)	
-		genLogger.debug("kernel major      : %s" %self.major)	
-		genLogger.debug("kernel minor      : %s" %self.minor)	
-		genLogger.debug("zflag             : %s" %self.zflag)	
-		genLogger.info("last_kernel_version: %s" %self.lversion)	
-		genLogger.info("distro             : %s" %self.distro)	
-		genLogger.debug("bkr common cmd    : %s" %self.bkrcommon)	
+		genLogger.info("rhel_version         : %s" %self.rhel_version)	
+		genLogger.info("kernel_version       : %s" %self.version)	
+		genLogger.debug("kernel major        : %s" %self.major)	
+		genLogger.debug("kernel minor        : %s" %self.minor)	
+		genLogger.debug("zflag               : %s" %self.zflag)	
+		genLogger.info("last_kernel_version  : %s" %self.lversion)	
+		genLogger.info("distro               : %s" %self.distro)	
+		genLogger.debug("bkr common cmd      : %s" %self.bkrcommon)	
 class JobSubmit(ErrataInfo):
 	def __init__(self, name):
 		self.jobType2Tested = {
@@ -152,7 +155,7 @@ class JobSubmit(ErrataInfo):
 		version = '--nvr=%s ' %self.version
 		extra = '--arch=ia64 --keyvalue="HOSTNAME=pq0-0.lab.bos.redhat.com"'
 		bkrcommand = "%s %s %s %s %s" %(self.bkrcommon, task, version, wboard, extra)
-		self.__submbkr(bkrcommand, "Fujitsu")
+		self.__submbkrShirk(bkrcommand, "Fujitsu")
 
 	def submAll(self):
 		if self.jobType2Tested['tps'] == 'y':
@@ -171,25 +174,24 @@ class JobSubmit(ErrataInfo):
 			self.submVirt()
 
 	def __submbkrShirk(self, cmd, type):
+		file = "./%s_tmp.xml" %type
+		cmd_dry = "%s --dryrun > %s" %(cmd, file)
+		genLogger.info(cmd_dry)
+		self.__shellCmd(cmd_dry)
 		if type == 'Tier2':
-			file = "./%s_tmp.xml" %type
-			cmd_dry = "%s --dryrun > %s" %(cmd, file)
-			genLogger.info(cmd_dry)
-			(ret, output) = commands.getstatusoutput(cmd_dry)
 			self.__Tier2Shirk(file)
-			cmd = "bkr job-submit %s" %file
-			jobid = self.__submbkr(cmd, type)
-			cmd = 'rm -f %s' %file
-			(ret, output) = commands.getstatusoutput(cmd)
-			return jobid
+		if type == 'Fujitsu':
+			self.__FjShirk(file)
+		cmd = "bkr job-submit %s" %file
+		jobid = self.__submbkr(cmd, type)
+		cmd = 'rm -f %s' %file
+		genLogger.debug(cmd)
+		self.__shellCmd(cmd)
+		return jobid
 
 	def __submbkr(self, cmd, type):
 		genLogger.info(cmd)
-		(ret, output) = commands.getstatusoutput(cmd)
-		if ret:
-			genLogger.error("========BKR ERR INFO=============")
-			genLogger.error("=============================")
-			exit(1)
+		output = self.__shellCmd(cmd)
 		pattern = re.compile(r'Submitted:.*(J:\d+).*\]')
 		m = pattern.search(output)
 		jobid = m.group(1)		
@@ -197,16 +199,36 @@ class JobSubmit(ErrataInfo):
 		return jobid
 
 
-	def __Tier2Shirk(self,file):
+	def __Tier2Shirk(self, file):
 		''' 
 		Use /kernel/errata/xfstests to instead of
 		/kernel/filesystems/xfs/xfstests
 		'''
 		cmd = "sed -i 's/\/kernel\/filesystems\/xfs\/xfstests/\/kernel\/errata\/xfstests/g' %s" %file
+		genLogger.debug(cmd)
+		self.__shellCmd(cmd)
+
+	def __FjShirk(self, file):
+		'''
+		remove the virt host test from xml
+		'''
+		cmd = ''' grep -n "xen DOM0" Fujitsu_tmp.xml | awk -F ":" '{print $1}' '''
+		genLogger.debug(cmd)
+		line1 = int(self.__shellCmd(cmd)) - 1
+		cmd = "sed -n  '%d, ${/<\/recipeSet>/=}' %s" %(line1, file)
+		genLogger.debug(cmd)
+		line2 = int(self.__shellCmd(cmd))
+		cmd = "sed -i '%d,%d d' %s" %(line1, line2, file)
+		genLogger.debug(cmd)
+		self.__shellCmd(cmd)
+		
+		
+	def __shellCmd(self, cmd):
 		(ret, output) = commands.getstatusoutput(cmd)
 		if ret:
 			genLooger.error("========CMD ERR INFO=============")
 			genLooger.error("======== %s =============" %cmd)
+			genLooger.error(output)
 			genLogger.error("=============================")
 			exit(1)
-
+		return output

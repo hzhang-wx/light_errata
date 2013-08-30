@@ -70,7 +70,7 @@ genLogger.info("Now going to submit jobs...")
 
 job2sub = JobSubmit(errataName)
 
-genLogger.info("type2Tested    :%s" %type2Tested)
+genLogger.info("type2Tested       :%s" %type2Tested)
 
 for type in type2Tested:
 	if type == 'tps':
