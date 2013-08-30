@@ -18,39 +18,26 @@ class ErrataInfo:
 	def __init__(self, name):
 		try:
 			self.errataName  = name
-			errata = xmlrpclib.ServerProxy(ErrataInfo.xmlRpc)
-			errata.ping()
+			self.errata = xmlrpclib.ServerProxy(ErrataInfo.xmlRpc)
+			self.errata.ping()
 		except:
 			genLogger.error("Could not connect to Errata. QUIT!")
 			exit(1)
 
-		packages = errata.get_base_packages_rhts(self.errataName)
+		packages = self.errata.get_base_packages_rhts(self.errataName)
 		genLogger.debug("errata packages     : %s" %packages)
-		errataLists = errata.get_advisory_list(\
-				{"release": packages[0]['rhel_version'],\
-				"qe_group": "Kernel QE"})
-		genLogger.debug("errata lists: %s" %errataLists)
-		self.errataLname = errataLists[-2]['advisory_name']
-		self.errataLid   = errataLists[-2]['errata_id']
-		self.errataId    = errataLists[-1]['errata_id']
-		genLogger.info("errataName           : %s" %self.errataName)
-		genLogger.info("lastErrataName       : %s" %self.errataLname)
-		genLogger.info("errataId             : %s" %self.errataId)
-		genLogger.info("lastErrataId         : %s" %self.errataLid)
 
 		self.rhel_version = packages[0]['rhel_version']
 		self.version = packages[0]['version']
 		self.distro  = self.rl2distro[self.rhel_version]
 		pattern = re.compile(r'RHEL-(\d)\.(\d)\.(.*)')
 		m = pattern.match(self.rhel_version)
-		self.major = m.group(1)		
-		self.minor = m.group(2)
+		self.major = int(m.group(1))
+		self.minor = int(m.group(2))
 		self.zflag = m.group(3)	
-		if int(self.major) == 6 and int(self.minor) == 3:
+		if self.major == 6 and self.minor == 3:
 			self.zflag = 'EUS'
-		lpackages = errata.get_base_packages_rhts(self.errataLname)
-		genLogger.debug("last errata packages: %s" %lpackages)
-		self.lversion = lpackages[0]['version']
+		self.__findLastErrata()
 
 		self.bkrcommon = 'bkr workflow-kernel --prettyxml '\
 			    '--hostrequire="group!=storage-qe" '\
@@ -72,6 +59,44 @@ class ErrataInfo:
 		genLogger.info("last_kernel_version  : %s" %self.lversion)	
 		genLogger.info("distro               : %s" %self.distro)	
 		genLogger.debug("bkr common cmd      : %s" %self.bkrcommon)	
+	
+	def __findLastErrata(self):
+		errataLists = self.errata.get_advisory_list(\
+			{"qe_group": "Kernel QE",\
+			"product": "RHEL"})
+		find_cur_errata  = 0
+		errataLists.reverse()
+		for errata in errataLists:
+			if errata['advisory_name'] == self.errataName:
+				find_cur_errata = 1
+				self.errataName = errata['advisory_name']
+				self.errataId   = errata['errata_id']
+				genLogger.info("errataName           : %s" %self.errataName)
+				genLogger.info("errataId             : %s" %self.errataId)
+				genLogger.debug("Find current errata : %s" %self.errataName)
+
+			elif find_cur_errata:
+				packages = self.errata.get_base_packages_rhts\
+					   (errata['advisory_name'])
+				if packages[0]['rhel_version'] != self.rhel_version:
+					continue
+				for pkg in packages[0]['packages']:
+					if pkg == "kernel" and \
+						packages[0]['rhel_version'] == self.rhel_version:
+						self.lversion    = packages[0]['version']
+						self.errataLname = errata['advisory_name']
+						self.errataLid   = errata['errata_id']
+						genLogger.info("lastErrataName       : \
+								%s" %self.errataLname)
+						genLogger.info("lastErrataId         : \
+								%s" %self.errataLid)
+						genLogger.info("Find Last errata\
+							: %s" %self.errataName)
+			 			return
+		genLogger.error("ErrataLists         : %s" %errataLists)
+		genLogger.error("Can't find Last Errata, Quit!")
+		return 
+
 class JobSubmit(ErrataInfo):
 	def __init__(self, name):
 		self.jobType2Tested = {
@@ -141,7 +166,7 @@ class JobSubmit(ErrataInfo):
 		self.__submbkr(cmd, "Virt")
 
 	def submFJ(self):
-		if int(self.major) != 5:
+		if self.major != 5:
 			genLogger.warn("Only For RHEL-5, skip Fujitsu test")
 			return
 		genLogger.info("Fujitsu submiting...")
