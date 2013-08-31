@@ -22,17 +22,28 @@ class MainControl:
 
 	@classmethod 	
 	def parseArgs(cls):
-		opts,args = getopt.getopt(sys.argv[1:], "T:e:t:h")
+		t_flag      = 0
+		opts,args   = ('', '')
+
+		try:
+			opts,args = getopt.getopt(sys.argv[1:], "T:h")
+		except:
+			pass
+
 		for opt, arg in opts:
 			if opt == '-h':
 				cls.usage()
 			if opt == '-T':
+				t_flag = 1
 				if not arg or arg not in cls.supportFuns:
 					genLogger.error("Unsupported function")
-					usage()
+					cls.usage()
 					pass
 				if arg == 'submitJobs':
 					cls.function = JobSubmit()
+
+		if not t_flag:
+			cls.usage()
 
 	@classmethod
 	def start(cls):
