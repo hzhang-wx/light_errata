@@ -26,7 +26,7 @@ class MainControl:
 		opts,args   = ('', '')
 
 		try:
-			opts,args = getopt.getopt(sys.argv[1:], "T:h")
+			opts,args = getopt.getopt(sys.argv[1:3], "T:h")
 		except:
 			pass
 
