@@ -234,7 +234,9 @@ class JobSubmit(ErrataInfo):
 			self.submVirt()
 
 	def start(self):
+		genLogger.info("Now going to submit jobs...")
 		self.submAll()
+		genLogger.info("All jobs submited :)")
 	
 	def __submbkrShirk(self, cmd, type):
 		file = "./%s_tmp.xml" %type

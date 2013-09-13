@@ -2,12 +2,13 @@
 from misc.logger          import *
 from misc.config          import *
 from utils.jobsubmit	  import *
+from utils.parsejob	      import *
 import getopt
 import sys
 
 class MainControl:
 	function    = ''
-	supportFuns = ['submitJobs']
+	supportFuns = ['submitJobs', 'parseJobs']
 
 	def __init__(self):
 		pass
@@ -40,15 +41,15 @@ class MainControl:
 					pass
 				if arg == 'submitJobs':
 					cls.function = JobSubmit()
+				if arg == 'parseJobs':
+					cls.function = ParseJob()
 
 		if not t_flag:
 			cls.usage()
 
 	@classmethod
 	def start(cls):
-		genLogger.info("Now going to submit jobs...")
 		cls.function.start()
-		genLogger.info("Jobs all submited :)")
 
 MainControl.parseArgs()
 MainControl.start()
