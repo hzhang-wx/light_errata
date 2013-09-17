@@ -1,0 +1,387 @@
+[/kernel/distribution/ltp/20100831]
+[[./syscalls]]
+has_sub = 'only'
+[[[./syscalls-get_mempolicy01]]
+bz      = ''
+logreg  = 'get_mempolicy01\s+FAIL'
+logname = '/test_log-syscalls.log'
+arch    = 's390x'
+kernel-debug-only = ''
+comment = ''
+
+[[[./syscalls-io_submit01]]]
+bz      = ''
+logreg  = 'io_submit01\s+FAIL'
+logname = '/test_log-syscalls.log'
+arch    = 's390x'
+kernel-debug-only = ''
+comment = ''
+
+[[[./syscalls-mbind01]]]
+bz      = ''
+logreg  = 'mbind01\s+FAIL'
+logname = '/test_log-syscalls.log'
+arch    = 's390x,ppc64'
+kernel-debug-only = ''
+comment = ''
+
+[[[./syscalls-settimeofday01]]]
+bz      = ''
+logreg  = 'settimeofday01\s+FAIL'
+logname = '/test_log-syscalls.log'
+arch    = 'x86_64,s390x,i386'
+kernel-debug-only = ''
+comment = ''
+
+[[[./syscalls-stime01]]]
+bz      = ''
+logreg  = 'stime01\s+FAIL'
+logname = '/test_log-syscalls.log'
+arch    = 'x86_64,i386'
+kernel-debug-only = ''
+comment = ''
+
+[[./fs]]
+bz      = ''
+logreg  = 'proc01\s+FAIL'
+logname = '/test_log-fs.log'
+arch    = 'x86_64,i386,s390x,ia64'
+kernel-debug-only = ''
+comment = ''
+
+[[./mm]]
+bz      = ''
+logreg  = 'mmapstress03\s+FAIL'
+logname = '/test_log-mm.log'
+arch    = 'ppc64'
+kernel-debug-only = ''
+comment = ''
+
+[/kernel/errata/xfstests]
+[[./ext4@generic/020]]
+bz      = ''
+logreg  = 'attr_set: No space left on device'
+logname = '/test_log-ext4@generic-020.log'
+arch    = 'ia64,ppc64'
+kernel-debug-only = ''
+comment = 'xfstests bug, patch sent upstream'
+
+[[./xfs@generic/029-panic]]
+bz      = '845935'
+logreg  = ''
+logname = ''
+arch    = ''
+kernel-debug-only = 'yes'
+comment = ''
+
+[[./xfs@generic/050]]
+bz      = ''
+logreg  = '4 4 10 00 \[7 days\]'
+logname = '/test_log-xfs@generic-050.log'
+arch    = ''
+kernel-debug-only = ''
+comment = 'quota output with different format, fixed in kernel commit 20f12d8'
+
+[[./ext4@generic/062]]
+bz      = '470093'
+logreg  = 'setfattr: SCRATCH_MNT/lnk: Operation not permitted'
+logname = '/test_log-ext4@generic-062.log'
+arch    = ''
+kernel-debug-only = ''
+comment = 'xattr bug'
+
+[[./xfs@generic/070-panic]]
+bz      = '650116'
+logreg  = ''
+logname = ''
+arch    = 'x86_64'
+kernel-debug-only = 'yes'
+comment = 'assert error, only occur on debug kernel'
+
+[[./ext4@generic/079]]
+bz      = '756309'
+logreg  = 'open\(\W+, O_RDWR|O_CREAT, 0666\) failed: Operation not permitted'
+logname = '/test_log-ext4@generic-079.log'
+arch    = 'ia64,i386,ppc4,s390x'
+kernel-debug-only = ''
+comment = ''
+
+[[./ext4@generic/091]]
+bz      = '756378'
+logreg  = 'mapped writes DISABLED'
+logname = '/test_log-ext4@generic-091.log'
+arch    = 's390x'
+kernel-debug-only = ''
+comment = 'logreg should be confirmed with eguan'
+
+[[./xfs@generic/122]]
+bz      = ''
+logreg  = 'sizeof\( xfs_btree_block_t \) = 24'
+logname = '/test_log-xfs@generic-122.log'
+arch    = 'x86_64'
+kernel-debug-only = ''
+comment = 'additional features in code, most probably not a bug'
+
+[[./xfs@generic/130]]
+bz      = ''
+logreg  = '0.000000 bytes, 0 ops; 0.0000 sec \(-nan bytes/sec and -nan ops/sec\)'
+logname = '/test_log-xfs@generic-130.log'
+arch    = 'x86_64'
+kernel-debug-only = ''
+comment = 'not a bug, output errors'
+
+[[./xfs@generic/182]]
+bz      = '661302'
+logreg  = 'file \S+ has incorrect size - sync failed'
+logname = '/test_log-xfs@generic-182.log'
+arch    = 'x86_64'
+kernel-debug-only = ''
+comment = ''
+
+[[./xfs@generic/186]]
+bz      = '660643'
+logreg  = '\+ATTR2'
+logname = '/test_log-xfs@generic-186.log'
+arch    = 'x86_64'
+kernel-debug-only = ''
+comment = ''
+
+[[./xfs@generic/192]]
+bz      = '664961'
+logreg  = '\+delta2 - access time after sleep on-disk: 0\n'
+logname = '/test_log-xfs@generic-192.log'
+arch    = 'x86_64'
+kernel-debug-only = ''
+comment = ''
+
+[[./ext4@generic/192]]
+bz      = ''
+logreg  = 'access time after sleep on-disk: 41'
+logname = '/test_log-ext4@generic-192.log'
+arch    = ''
+kernel-debug-only = ''
+comment = ''
+
+[[./xfs@generic/194]]
+bz      = '661310'
+logreg  = '0:	blocks	4'
+logname = '/test_log-xfs@generic-194.log'
+arch    = 'x86_64'
+kernel-debug-only = ''
+comment = ''
+
+[[./ext4@generic/204]]
+bz      = '720876'
+logreg  = 'write error: No space left on device'
+logname = '/test_log-xfs@generic-204.log'
+arch    = ''
+kernel-debug-only = ''
+comment = ''
+
+[[./xfs@generic/205]]
+bz      = '660638'
+logreg  = '   !!! disk full \(expected\)'
+logname = '/test_log-xfs@generic-205.log'
+arch    = 'x86_64'
+kernel-debug-only = ''
+comment = ''
+
+[[./xfs@generic/218]]
+bz      = '664938'
+logreg  = '\+Before: 1'
+logname = ''
+arch    = 'x86_64'
+kernel-debug-only = ''
+comment = ''
+
+[[./xfs@generic/218-panic]]
+bz      = '664938'
+logreg  = '\+Before: 1'
+logname = ''
+arch    = 'x86_64'
+kernel-debug-only = 'yes'
+comment = 'only on on kernel-debug'
+
+[[./ext4@generic/224-warn]]
+bz      = ''
+logreg  = '\./224: line 79: \s*\d+ Killed'
+logname = 'console.log'
+arch    = 'i386,s390x,ppc64'
+kernel-debug-only = ''
+comment = 'oom kill, NOTABUG, may hung follow-up tests'
+
+[[./ext4@generic/225]]
+bz      = '691827'
+logreg  = 'ERROR: found an allocated extent where a hole should be: \d+|ERROR: couldn''t find extent at \d+|FIEMAP ioctl failed: Input/output error'
+logname = '/test_log-ext4@generic-225.log'
+arch    = 'i386,ppc64,ia64,s390x'
+kernel-debug-only = ''
+comment = '3 different logs, should seriously check the case'
+
+[[./ext4@generic/225-panic]]
+bz      = '692071'
+logreg  = ''
+logname = ''
+arch    = 's390x'
+kernel-debug-only = ''
+comment = '3 different logs, should seriously check the case'
+
+[[./xfs@generic/227]]
+bz      = ''
+logreg  = 'line 70: echo: write error: No space left on device'
+logname = '/test_log-xfs@generic-227.log'
+arch    = 'x86_64'
+kernel-debug-only = ''
+comment = 'no space left, should be confirm with eguan'
+
+[[./xfs@generic/227]]
+bz      = '664938'
+logreg  = '\+Before: 1'
+logname = ''
+arch    = 'x86_64'
+kernel-debug-only = ''
+comment = ''
+
+[[./xfs@generic/231]]
+bz      = ''
+logreg  = 'repquota: Not all specified mountpoints are using quota'
+logname = '/test_log-xfs@generic-231.log'
+arch    = 'x86_64'
+kernel-debug-only = ''
+comment = 'quota bug, fix in quota-3.13-6.el5'
+
+[[./xfs@generic/232]]
+bz      = ''
+logreg  = 'repquota: Not all specified mountpoints are using quota'
+logname = '/test_log-xfs@generic-232.log'
+arch    = 'x86_64'
+kernel-debug-only = ''
+comment = 'quota bug, fix in quota-3.13-6.el5'
+
+[[./xfs@generic/233]]
+bz      = ''
+logreg  = 'repquota: Not all specified mountpoints are using quota'
+logname = '/test_log-xfs@generic-233.log'
+arch    = 'x86_64'
+kernel-debug-only = ''
+comment = 'quota bug, fix in quota-3.13-6.el5'
+
+[[./xfs@generic/247]]
+bz      = '660669'
+logreg  = 'Bus error'
+logname = '/test_log-xfs@generic-247.log'
+arch    = 'x86_64'
+kernel-debug-only = ''
+comment = ''
+
+[[./ext4@generic/247]]
+bz      = '772525'
+logreg  = 'Bus error'
+logname = '/test_log-ext4@generic-247.log'
+arch    = 'i386,s390x,ia64'
+kernel-debug-only = ''
+comment = ''
+
+[[./ext4@generic/250]]
+bz      = ''
+logreg  = '_check_xfs_filesystem: filesystem on /mnt/testarea/test/250.fs has dirty log'
+logname = '/test_log-ext4@generic-250.log'
+arch    = ''
+kernel-debug-only = ''
+comment = ''
+
+[[./ext4@generic/263]]
+bz      = '819438'
+logreg  = 'READ BAD DATA: offset = \w+, size = \w+, fname = \S+'
+logname = '/test_log-ext4@generic-263.log'
+arch    = 's390x,ppc64,ia64'
+kernel-debug-only = ''
+comment = 'logreg should be confirmed with eguan'
+
+[[./xfs@generic/263]]
+bz      = '750160'
+logreg  = 'Mapped Read: non-zero data past EOF \(\w+\) page offset \w+ is \w+'
+logname = '/test_log-xfs@generic-263.log'
+arch    = 'x86_64'
+kernel-debug-only = ''
+comment = ''
+
+[[./ext4@generic/269]]
+bz      = '847981'
+logreg  = 'dd: writing \S+: No space left on device'
+logname = '/test_log-ext4@generic-269.log'
+arch    = 'i386,s390x,ppc64,ia64'
+kernel-debug-only = ''
+comment = ''
+
+[[./ext4@generic/269-panic]]
+bz      = '769386'
+logreg  = ''
+logname = ''
+arch    = 'i386'
+kernel-debug-only = ''
+comment = ''
+
+[[./ext4@generic/272]]
+bz      = ''
+logreg  = 'dd: invalid input flag: `noatime'''
+logname = '/test_log-ext4@generic-272.log'
+arch    = ''
+kernel-debug-only = ''
+comment = 'dd on rhel5 has no 'iflag=noatime' option'
+
+[[./ext4@generic/273]]
+bz      = '771596,771588'
+logreg  = 'cp: (writing|cannot create regular file) \S+: No space left on device'
+logname = '/test_log-ext4@generic-273.log'
+arch    = 'x86_64'
+kernel-debug-only = ''
+comment = 'run out of inode'
+
+[[./xfs@generic/273]]
+bz      = '771596,771588'
+logreg  = 'cp: (writing|cannot create regular file) \S+: No space left on device'
+logname = '/test_log-xfs@generic-273.log'
+arch    = 'x86_64'
+kernel-debug-only = ''
+comment = 'run out of inode'
+
+[[./ext2@generic/275]]
+bz      = '771613'
+logreg  = 'write file err'
+logname = '/test_log-ext2@generic-275.log'
+arch    = ''
+kernel-debug-only = ''
+comment = 'not sure bug, refer to rhel5 bz'
+
+[[./ext3@generic/275]]
+bz      = '771613'
+logreg  = 'write file err'
+logname = '/test_log-ext3@generic-275.log'
+arch    = ''
+kernel-debug-only = ''
+comment = 'not sure bug, refer to rhel5 bz'
+
+[[./ext4@generic/275]]
+bz      = '771613'
+logreg  = 'write file err'
+logname = '/test_log-ext4@generic-275.log'
+arch    = ''
+kernel-debug-only = ''
+comment = 'not sure bug, refer to rhel5 bz'
+
+[[./xfs@generic/275]]
+bz      = '771613'
+logreg  = 'write file err'
+logname = '/test_log-xfs@generic-275.log'
+arch    = ''
+kernel-debug-only = ''
+comment = 'not sure bug, refer to rhel5 bz'
+
+[[./ext4@generic/280]]
+bz      = ''
+logreg  = 'setquota: Cannot get quota for user 0 from kernel on \S+: No such process'
+logname = '/test_log-ext4@generic-280.log'
+arch    = 's390x'
+kernel-debug-only = ''
+comment = 'not sure, eguan investigating'

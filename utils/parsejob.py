@@ -118,8 +118,6 @@ class ParseJob:
 								jobxml = self.__addedRS2Rerun(rs.result['id'], jobxml)
 								end_by_guest_task = True
 								break
-	
-
 
 		if not jobxml:
 			self.__updateJobState(jobs, 'Reruned')
