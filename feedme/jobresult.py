@@ -47,15 +47,37 @@ class TaskResult:
 			if n.nodeName == "results":
 				self.result['results'].append(Results(n))
 
+class GuestRecipeResult:
+	def __init__(self, node):
+		self.result = { 'id'         : '',
+						'status'     : '',
+						'result'     : '',
+						'distro'     : '',
+						'wb'         : '',
+						'task'       : [],
+	   }
+		self.__feedMe(node)
+
+	def __feedMe(self, node):
+		self.result['id']     = node.getAttributeNode('id').value
+		self.result['status'] = node.getAttributeNode('status').value
+		self.result['result'] = node.getAttributeNode('result').value
+		self.result['distro'] = node.getAttributeNode('distro').value
+		self.result['wb']     = node.getAttributeNode('whiteboard').value
+		for n in node.childNodes:
+			if n.nodeName == "task":
+				self.result['task'].append(TaskResult(n))
+
 class RecipeResult:
 	def __init__(self, node):
-		self.result = { 'id'    : '',
-						'status': '',
-						'result': '',
-						'system': '',
-						'distro': '',
-						'wb'    : '',
-						'task'  : []
+		self.result = { 'id'         : '',
+						'status'     : '',
+						'result'     : '',
+						'system'     : '',
+						'distro'     : '',
+						'wb'         : '',
+						'task'       : [],
+						'guestrecipe': []
 	   }
 		self.__feedMe(node)
 
@@ -69,6 +91,8 @@ class RecipeResult:
 		for n in node.childNodes:
 			if n.nodeName == "task":
 				self.result['task'].append(TaskResult(n))
+			if n.nodeName == "guestrecipe":
+				self.result['task'].append(GuestRecipeResult(n))
 
 class RSResult:
 	def __init__(self, node):

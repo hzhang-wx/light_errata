@@ -78,9 +78,11 @@ class ParseJob:
 						%(job.type, job.result['id'], job.result['status']))
 				continue
 			for rs in job.result['recipeSet']:
-				end_by_task = False
+				end_by_task       = False
+				end_by_guest      = False
+				end_by_guest_task = False
 				for r in rs.result['recipe']:
-					if end_by_task:
+					if end_by_task or end_by_guest or end_by_guest_task:
 						break
 					if r.result['status'] == 'Aborted' or r.result['status'] == 'Panic':
 						genLogger.info('%s J:%s RS:%s adding to rerun since R:%s %s' \
@@ -94,6 +96,23 @@ class ParseJob:
 							jobxml = self.__addedRS2Rerun(rs.result['id'], jobxml)
 							end_by_task = True
 							break
+					for gr in rs.result['guestrecipe']:
+						if end_by_guest_task:
+							break
+						if gr.result['status'] == 'Aborted' or gr.result['status'] == 'Panic':
+							genLogger.info('%s J:%s RS:%s adding to rerun since Guest R:%s %s' \
+									%(job.type, job.result['id'], rs.result['id'], gr.result['id'], gr.result['status']))
+							jobxml = self.__addedRS2Rerun(rs.result['id'], jobxml)
+							end_by_guest = True
+							break
+						for gt in gr.result['task']:
+							if gt.result['status'] == 'Aborted':
+								genLogger.info('%s J:%s RS:%s adding to rerun since Guest T:%s Aborted' \
+									%(job.type, job.result['id'], rs.result['id'], gt.result['id']))
+								jobxml = self.__addedRS2Rerun(rs.result['id'], jobxml)
+								end_by_guest_task = True
+								break
+	
 		if not jobxml:
 			genLogger.info("No %s jobs need to rerun" %jobs[0].type)
 			return
