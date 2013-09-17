@@ -120,10 +120,10 @@ class ParseJob:
 								break
 	
 
-		self.__updateJobState(jobs, 'Reruned')
-		self.jobState.write()
 
 		if not jobxml:
+			self.__updateJobState(jobs, 'Reruned')
+			self.jobState.write()
 			genLogger.info("No %s jobs need to rerun" %jobs[0].type)
 			return
 
@@ -139,6 +139,8 @@ class ParseJob:
 
 		cmd = 'bkr job-submit %s/%s.rerun' %(TMP_DIR, jobs[0].type)
 		jobid = submBkr(cmd, jobs[0].type)
+
+		self.__updateJobState(jobs, 'Reruned')
 
 		self.jobState[jobs[0].type][jobid] = { 'wb': new_wb, 'status': ''}
 		self.jobState.write()
