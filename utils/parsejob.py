@@ -4,6 +4,7 @@ from utils.common     import *
 from feedme.jobresult import *
 from misc.configobj   import ConfigObj
 import getopt
+import codecs
 
 
 class ParseJob:
@@ -58,8 +59,67 @@ class ParseJob:
 	def __parseKnownIssues(self, jobs):
 		pass
 
+	def __addedRS2Rerun(self, id, jobxml):
+		cloneJobXml("RS:%s" %id)
+		xml = minidom.parse("%s/RS:%s.xml" %(TMP_DIR, id))
+		if not jobxml:
+			jobxml = xml
+			return jobxml
+		for n in xml.documentElement.childNodes:
+			if n.nodeName == "recipeSet":
+				jobxml.documentElement.appendChild(n)
+		return jobxml
+
 	def __autoRerun(self, jobs):
-		pass
+		jobxml = None 
+		for job in jobs:
+			if job.result['status'] != 'Completed':
+				genLogger.warn("%s J:%s status %s, not Completed, SKIP" \
+						%(job.type, job.result['id'], job.result['status']))
+				continue
+			for rs in job.result['recipeSet']:
+				end_by_task = False
+				for r in rs.result['recipe']:
+					if end_by_task:
+						break
+					if r.result['status'] == 'Aborted' or r.result['status'] == 'Panic':
+						genLogger.info('%s J:%s RS:%s adding to rerun since R:%s %s' \
+								%(job.type, job.result['id'], rs.result['id'], r.result['id'], r.result['status']))
+						jobxml = self.__addedRS2Rerun(rs.result['id'], jobxml)
+						break
+					for t in r.result['task']:
+						if t.result['status'] == 'Aborted':
+							genLogger.info('%s J:%s RS:%s adding to rerun since T:%s Aborted' \
+								%(job.type, job.result['id'], rs.result['id'], t.result['id']))
+							jobxml = self.__addedRS2Rerun(rs.result['id'], jobxml)
+							end_by_task = True
+							break
+		if not jobxml:
+			genLogger.info("No %s jobs need to rerun" %jobs[0].type)
+			return
+
+		wb = jobxml.documentElement.getElementsByTagName\
+				('whiteboard')[0].childNodes[0].nodeValue
+		new_wb = "Rerun %s" %wb
+		jobxml.documentElement.getElementsByTagName\
+				('whiteboard')[0].childNodes[0].nodeValue = new_wb
+		f = file("%s/%s.rerun" %(TMP_DIR, jobs[0].type), 'w')
+		writer = codecs.lookup('utf-8')[3](f)
+		jobxml.writexml(writer, encoding='utf-8')
+		writer.close()
+
+		cmd = 'bkr job-submit %s/%s.rerun' %(TMP_DIR, jobs[0].type)
+		jobid = submBkr(cmd, jobs[0].type)
+
+		self.jobState[jobs[0].type][jobid] = { 'wb': new_wb, 'status': ''}
+		for job in jobs:
+			if not self.jobState[job.type]['J:%s' %job.result['id']]['wb']:
+				self.jobState[job.type]['J:%s' %job.result['id']]['wb'] = job.result['wb']
+			if not self.jobState[job.type]['J:%s' %job.result['id']]['status']:
+				self.jobState[job.type]['J:%s' %job.result['id']]['status'] = 'Reruned'
+			else:
+				self.jobState[job.type]['J:%s' %job.result['id']]['status'] += '|Reruned'
+		self.jobState.write()
 			
 	def start(self):
 		for t in self.jobState:
@@ -77,22 +137,20 @@ class ParseJob:
 					elif flag == 'Reruned':
 						reruned = 'y'
 						genLogger.info("Job %s has been Reruned, SKIP" %jid)
-					else:
+					elif flag:
 						genLogger.error("Unknow %s %s status flag: %s" %(t, jid, flag))
 						exit(1)
 				if parsed == 'y' and reruned == 'y':
 					continue
 				jobs.append(JobResult(jid))
 				jobs[-1].type = t
-				self.__fillConfig(jobs[-1])
 			if self.parseKnownIssues == 'y' and parsed != 'y':
 				genLogger.info("Start to parse %s jobs known issues..." %t)
 				self.__parseKnownIssues(jobs)
-				genLogger.info("%s jobs known issues parsed" %t)
+				genLogger.info("%s jobs known issues parsed end" %t)
 			if self.autoRerun == 'y' and reruned != 'y':
 				genLogger.info("Start to parse %s jobs needed to rerun..." %t)
 				self.__autoRerun(jobs)
-				genLogger.info("%s jobs reruned which need to be" %t)
-				print jobs
+				genLogger.info("%s jobs reruned end" %t)
 			genLogger.info("End to parse %s jobs" %t)
 		genLogger.info("All jobs parsed")

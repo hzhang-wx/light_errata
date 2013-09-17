@@ -36,7 +36,6 @@ class TaskResult:
 						'result' : '',
 						'results': []
 	   }
-		self.url  = ''
 		self.__feedMe(node)
 
 	def __feedMe(self, node):
@@ -58,7 +57,6 @@ class RecipeResult:
 						'wb'    : '',
 						'task'  : []
 	   }
-		self.url  = ''
 		self.__feedMe(node)
 
 	def __feedMe(self, node):
@@ -95,12 +93,11 @@ class JobResult:
 				        'recipeSet': []
 		}
 		self.type = ''
-		self.url  = ''
 		self.__feedMe(id)
 
 	def __feedMe(self, id):
-		grapJobResult(id)
-		xml = minidom.parse("%s.xml" %id)
+		grabJobResult(id)
+		xml = minidom.parse("%s/%s.xml" %(TMP_DIR, id))
 		genLogger.debug("Start to load Job: %s xml" %id)
 		job = xml.documentElement
 		self.result['id']		 = job.getAttributeNode('id').value
@@ -111,4 +108,3 @@ class JobResult:
 			if n.nodeName == "recipeSet":
 				self.result['recipeSet'].append(RSResult(n))
 		genLogger.debug("Job: %s xml loaded" %id)
-		print self.result

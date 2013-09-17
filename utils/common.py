@@ -4,23 +4,40 @@ import commands
 import xmlrpclib
 import re
 
+TMP_DIR='./tmp'
 
-def grapJobResult(id):
-	cmd = 'bkr job-results --prettyxml %s > %s.xml' %(id, id)
-	genLogger.debug("Graped %s result xml" %id)
+def grabJobResult(id):
+	cmd = 'bkr job-results --prettyxml %s > %s/%s.xml' %(id, TMP_DIR, id)
+	genLogger.debug("Grabed %s result xml" %id)
+	output = shellCmd(cmd)
+	return output
+
+def cloneJobXml(id):
+	cmd = 'bkr job-clone --dryrun --prettyxml %s > %s/%s.xml' %(id, TMP_DIR, id)
+	genLogger.debug("Cloned %s xml" %id)
 	output = shellCmd(cmd)
 	return output
 
 def shellCmd(cmd):
 	(ret, output) = commands.getstatusoutput(cmd)
 	if ret:
-		genLooger.error("========CMD ERR INFO=============")
-		genLooger.error("======== %s =============" %cmd)
-		genLooger.error(output)
+		genLogger.error("========CMD ERR INFO=============")
+		genLogger.error("======== %s =============" %cmd)
+		genLogger.error(output)
 		genLogger.error("=============================")
 		exit(1)
 	return output
 
+shellCmd('if [ ! -d %s ]; then mkdir -p %s; fi' %(TMP_DIR, TMP_DIR))
+
+def submBkr(cmd, type):
+	genLogger.info(cmd)
+	output = shellCmd(cmd)
+	pattern = re.compile(r'Submitted:.*(J:\d+).*\]')
+	m = pattern.search(output)
+	jobid = m.group(1)		
+	genLogger.info("%s submited, %s" %(type, jobid))
+	return jobid
 
 class ErrataInfo:
 
