@@ -53,9 +53,6 @@ class ParseJob:
 		if not self.errataName:
 			self.usage()
 
-	def __fillConfig(self, job):
-		pass
-
 	def __parseKnownIssues(self, jobs):
 		pass
 
@@ -69,6 +66,15 @@ class ParseJob:
 			if n.nodeName == "recipeSet":
 				jobxml.documentElement.appendChild(n)
 		return jobxml
+
+	def __updateJobState(self, jobs, flag):
+		for job in jobs:
+			if not self.jobState[job.type]['J:%s' %job.result['id']]['wb']:
+				self.jobState[job.type]['J:%s' %job.result['id']]['wb'] = job.result['wb']
+			if not self.jobState[job.type]['J:%s' %job.result['id']]['status']:
+				self.jobState[job.type]['J:%s' %job.result['id']]['status'] = flag
+			else:
+					self.jobState[job.type]['J:%s' %job.result['id']]['status'] += '|%s' %flag
 
 	def __autoRerun(self, jobs):
 		jobxml = None 
@@ -113,6 +119,10 @@ class ParseJob:
 								end_by_guest_task = True
 								break
 	
+
+		self.__updateJobState(jobs, 'Reruned')
+		self.jobState.write()
+
 		if not jobxml:
 			genLogger.info("No %s jobs need to rerun" %jobs[0].type)
 			return
@@ -131,13 +141,6 @@ class ParseJob:
 		jobid = submBkr(cmd, jobs[0].type)
 
 		self.jobState[jobs[0].type][jobid] = { 'wb': new_wb, 'status': ''}
-		for job in jobs:
-			if not self.jobState[job.type]['J:%s' %job.result['id']]['wb']:
-				self.jobState[job.type]['J:%s' %job.result['id']]['wb'] = job.result['wb']
-			if not self.jobState[job.type]['J:%s' %job.result['id']]['status']:
-				self.jobState[job.type]['J:%s' %job.result['id']]['status'] = 'Reruned'
-			else:
-				self.jobState[job.type]['J:%s' %job.result['id']]['status'] += '|Reruned'
 		self.jobState.write()
 			
 	def start(self):
