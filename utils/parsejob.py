@@ -9,8 +9,8 @@ import codecs
 
 class ParseJob:
 	def __init__(self):
-		self.autoRerun        = 'y'
-		self.parseKnownIssues = 'y'
+		self.autoRerun        = ''
+		self.parseKnownIssues = ''
 		self.errataName       = ''
 		self.__parseArgs()
 		self.errataInfo       = ErrataInfo(self.errataName)
@@ -35,18 +35,19 @@ class ParseJob:
 
 	@classmethod
 	def usage(cls):
-		print("Usage: %s -T parseJobs -e errataName [-r -h]" \
+		print("Usage: %s -T parseJobs -e errataName [-r -p -h]" \
 				%sys.argv[0])
 		exit(1)
 
 	def __parseArgs(self):
-		opts,args = getopt.getopt(sys.argv[1:], "T:e:rh")
+		opts,args = getopt.getopt(sys.argv[1:], "T:e:rph")
 		for opt, arg in opts:
 			if opt == '-h':
 				self.usage()
 			elif opt == '-r':
 				self.autoRerun        = 'y'
-				self.parseKnownIssues = 'n'
+			elif opt == '-p':
+				self.parseKnownIssues = 'y'
 			elif opt == '-e':
 				self.errataName = arg
 
@@ -170,7 +171,8 @@ class ParseJob:
 					elif flag:
 						genLogger.error("Unknow %s %s status flag: %s" %(t, jid, flag))
 						exit(1)
-				if parsed == 'y' and reruned == 'y':
+				if (parsed == 'y' or not self.parseKnownIssues) and \
+						(reruned == 'y' or not self.autoRerun):
 					continue
 				jobs.append(JobResult(jid))
 				jobs[-1].type    = t
