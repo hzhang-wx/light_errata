@@ -116,7 +116,9 @@ class JobResult:
 				        'status'   : '',
 				        'recipeSet': []
 		}
-		self.type = ''
+		self.type     = ''
+		self.parsed   = ''
+		self.reruned  = ''
 		self.__feedMe(id)
 
 	def __feedMe(self, id):

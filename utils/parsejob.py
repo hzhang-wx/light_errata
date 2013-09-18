@@ -71,17 +71,25 @@ class ParseJob:
 		for job in jobs:
 			if not self.jobState[job.type]['J:%s' %job.result['id']]['wb']:
 				self.jobState[job.type]['J:%s' %job.result['id']]['wb'] = job.result['wb']
+			if (flag == 'Reruned' and job.reruned) or (flag == 'Parsed' and job.parsed):
+				continue
 			if not self.jobState[job.type]['J:%s' %job.result['id']]['status']:
 				self.jobState[job.type]['J:%s' %job.result['id']]['status'] = flag
 			else:
-					self.jobState[job.type]['J:%s' %job.result['id']]['status'] += '|%s' %flag
+				self.jobState[job.type]['J:%s' %job.result['id']]['status'] += '|%s' %flag
 
 	def __autoRerun(self, jobs):
 		jobxml = None 
 		for job in jobs:
+			if job.reruned:
+				continue
 			if job.result['status'] != 'Completed':
 				genLogger.warn("%s J:%s status %s, not Completed, SKIP" \
 						%(job.type, job.result['id'], job.result['status']))
+				continue
+			if job.result['result'] == 'Pass':
+				genLogger.debug("%s J:%s result %s, SKIP" \
+						%(job.type, job.result['id'], job.result['result']))
 				continue
 			for rs in job.result['recipeSet']:
 				end_by_task       = False
@@ -90,7 +98,7 @@ class ParseJob:
 				for r in rs.result['recipe']:
 					if end_by_task or end_by_guest or end_by_guest_task:
 						break
-					if r.result['status'] == 'Aborted' or r.result['status'] == 'Panic':
+					if r.result['status'] == 'Aborted' or r.result['result'] == 'Panic':
 						genLogger.info('%s J:%s RS:%s adding to rerun since R:%s %s' \
 								%(job.type, job.result['id'], rs.result['id'], r.result['id'], r.result['status']))
 						jobxml = self.__addedRS2Rerun(rs.result['id'], jobxml)
@@ -102,10 +110,10 @@ class ParseJob:
 							jobxml = self.__addedRS2Rerun(rs.result['id'], jobxml)
 							end_by_task = True
 							break
-					for gr in rs.result['guestrecipe']:
+					for gr in r.result['guestrecipe']:
 						if end_by_guest_task:
 							break
-						if gr.result['status'] == 'Aborted' or gr.result['status'] == 'Panic':
+						if gr.result['status'] == 'Aborted' or gr.result['result'] == 'Panic':
 							genLogger.info('%s J:%s RS:%s adding to rerun since Guest R:%s %s' \
 									%(job.type, job.result['id'], rs.result['id'], gr.result['id'], gr.result['status']))
 							jobxml = self.__addedRS2Rerun(rs.result['id'], jobxml)
@@ -151,7 +159,7 @@ class ParseJob:
 			genLogger.info("Start to parse %s jobs..." %t)
 			jobs = []
 			for jid in self.jobState[t]:
-				reruned, parsed = ('n', 'n')
+				reruned, parsed = ('', '')
 				for flag in self.jobState[t][jid]['status'].split("|"):
 					if flag == 'Parsed':
 						parsed = 'y'
@@ -165,7 +173,9 @@ class ParseJob:
 				if parsed == 'y' and reruned == 'y':
 					continue
 				jobs.append(JobResult(jid))
-				jobs[-1].type = t
+				jobs[-1].type    = t
+				jobs[-1].parsed  = parsed
+				jobs[-1].reruned = reruned
 			if self.parseKnownIssues == 'y' and parsed != 'y':
 				genLogger.info("Start to parse %s jobs known issues..." %t)
 				self.__parseKnownIssues(jobs)
