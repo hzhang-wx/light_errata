@@ -83,8 +83,8 @@ class ParseJob:
 		for job in jobs:
 			if job.reruned:
 				continue
-			if job.result['status'] != 'Completed':
-				genLogger.warn("%s J:%s status %s, not Completed, SKIP" \
+			if job.result['status'] != 'Completed' or job.result['status'] != 'Aborted':
+				genLogger.warn("%s J:%s status %s, not Completed or Aborted, SKIP" \
 						%(job.type, job.result['id'], job.result['status']))
 				continue
 			if job.result['result'] == 'Pass':
