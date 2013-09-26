@@ -34,7 +34,7 @@ class TaskResult:
 						'name'   : '',
 						'status' : '',
 						'result' : '',
-						'results': []
+						'results': '',
 	   }
 		self.__feedMe(node)
 
@@ -45,7 +45,7 @@ class TaskResult:
 		self.result['result'] = node.getAttributeNode('result').value
 		for n in node.childNodes:
 			if n.nodeName == "results":
-				self.result['results'].append(Results(n))
+				self.result['results'] = Results(n)
 
 class GuestRecipeResult:
 	def __init__(self, node):
@@ -119,6 +119,7 @@ class JobResult:
 		self.type     = ''
 		self.parsed   = ''
 		self.reruned  = ''
+		self.logsPath  = ''
 		self.__feedMe(id)
 
 	def __feedMe(self, id):
@@ -130,6 +131,7 @@ class JobResult:
 		self.result['result']	 = job.getAttributeNode('result').value
 		self.result['status']	 = job.getAttributeNode('status').value
 		self.result['wb']        = job.getElementsByTagName('whiteboard')[0].childNodes[0].nodeValue
+		self.logsPath = grabLogsPath('J:%s' %self.result['id'])
 		for n in job.childNodes:
 			if n.nodeName == "recipeSet":
 				self.result['recipeSet'].append(RSResult(n))

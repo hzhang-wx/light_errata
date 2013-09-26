@@ -18,6 +18,18 @@ def cloneJobXml(id):
 	output = shellCmd(cmd)
 	return output
 
+def grabLogsPath(id):
+	cmd = 'bkr job-logs %s' %id
+	genLogger.debug("Grabed %s logs path" %id)
+	output = shellCmd(cmd)
+	return output
+
+def getLogPath(logs, id, name):
+	pattern = re.compile(r'%s.*%s$' %(id, name))
+	m = pattern.search(logs)
+	path = m.group(0)
+	return path
+
 def shellCmd(cmd):
 	(ret, output) = commands.getstatusoutput(cmd)
 	if ret:
