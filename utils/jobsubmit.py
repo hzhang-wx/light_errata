@@ -79,7 +79,7 @@ class ErrataInfo:
 			elif find_cur_errata:
 				packages = self.errata.get_base_packages_rhts\
 					   (errata['advisory_name'])
-				if packages[0]['rhel_version'] != self.rhel_version:
+				if not packages or packages[0]['rhel_version'] != self.rhel_version:
 					continue
 				for pkg in packages[0]['packages']:
 					if pkg == "kernel":
