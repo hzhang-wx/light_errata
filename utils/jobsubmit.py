@@ -10,11 +10,12 @@ class ErrataInfo:
 
 	xmlRpc = 'http://errata-xmlrpc.devel.redhat.com/errata/errata_service'
 	rl2distro = {
-		'RHEL-6.2.Z' : 'RHEL-6.2',
-		'RHEL-6.3.Z' : 'RHEL-6.3',
-		'RHEL-6.4.Z' : 'RHEL-6.4',
-		'RHEL-5.9.Z' : 'RHEL5-Server-U9',
-		'RHEL-5.6.Z' : 'RHEL5-Server-U6'
+		'RHEL-6.2.Z'  : 'RHEL-6.2',
+		'RHEL-6.3.Z'  : 'RHEL-6.3',
+		'RHEL-6.4.Z'  : 'RHEL-6.4',
+		'RHEL-5.10.Z' : 'RHEL5-Server-U10',
+		'RHEL-5.9.Z'  : 'RHEL5-Server-U9',
+		'RHEL-5.6.Z'  : 'RHEL5-Server-U6'
 	}
 
 	
@@ -32,7 +33,7 @@ class ErrataInfo:
 		self.rhel_version = packages[0]['rhel_version']
 		self.version = packages[0]['version']
 		self.distro  = self.rl2distro[self.rhel_version]
-		pattern = re.compile(r'RHEL-(\d)\.(\d)\.(.*)')
+		pattern = re.compile(r'RHEL-(\d+)\.(\d+)\.(.*)')
 		m = pattern.match(self.rhel_version)
 		self.major = int(m.group(1))
 		self.minor = int(m.group(2))
@@ -77,10 +78,14 @@ class ErrataInfo:
 				genLogger.debug("Find current errata: %s" %self.errataName)
 
 			elif find_cur_errata:
-				packages = self.errata.get_base_packages_rhts\
-					   (errata['advisory_name'])
-				if not packages or packages[0]['rhel_version'] != self.rhel_version:
-					continue
+				if self.errataLname:
+					packages = self.errata.get_base_packages_rhts\
+						   (self.errataLname)
+				else:
+					packages = self.errata.get_base_packages_rhts\
+						   (errata['advisory_name'])
+					if not packages or packages[0]['rhel_version'] != self.rhel_version:
+						continue
 				for pkg in packages[0]['packages']:
 					if pkg == "kernel":
 						self.lversion    = packages[0]['version']
@@ -119,17 +124,19 @@ class JobSubmit(ErrataInfo):
 
 	@classmethod
 	def usage(cls):
-		print "Usage: %s -T submitJobs -e errataId [-t "\
+		print "Usage: %s -T submitJobs -e errataName [-l lasterataName] [-t "\
 				"[%s] -h]" %(sys.argv[0], cls.allTests)
 		exit(1)
 	
 	def __parseArgs(self):
-		opts,args = getopt.getopt(sys.argv[1:], "T:e:t:h")
+		opts,args = getopt.getopt(sys.argv[1:], "T:e:l:t:h")
 		for opt, arg in opts:
 			if opt == '-h':
 				self.usage()
 			elif opt == '-e':
 				self.errataName = arg
+			elif opt ==  '-l':
+				self.errataLname = arg
 			elif opt ==  '-t':
 				self.type2Tested = arg
 	
@@ -291,9 +298,9 @@ class JobSubmit(ErrataInfo):
 	def __shellCmd(self, cmd):
 		(ret, output) = commands.getstatusoutput(cmd)
 		if ret:
-			genLooger.error("========CMD ERR INFO=============")
-			genLooger.error("======== %s =============" %cmd)
-			genLooger.error(output)
+			genLogger.error("========CMD ERR INFO=============")
+			genLogger.error("======== %s =============" %cmd)
+			genLogger.error(output)
 			genLogger.error("=============================")
 			exit(1)
 		return output
