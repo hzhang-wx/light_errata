@@ -117,8 +117,9 @@ class JobSubmit(ErrataInfo):
 				'virt'       : 'n',
 			}
 
-		self.type2Tested  = ''
-		self.errataName   = ''
+		self.type2Tested   = ''
+		self.errataName    = ''
+		self.errataLname   = ''
 		self.__parseArgs()
 		ErrataInfo.__init__(self, self.errataName)
 
