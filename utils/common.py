@@ -20,14 +20,18 @@ def cloneJobXml(id):
 
 def grabLogsPath(id):
 	cmd = 'bkr job-logs %s' %id
-	genLogger.debug("Grabed %s logs path" %id)
+	genLogger.debug("Grabing %s logs path" %id)
 	output = shellCmd(cmd)
+	genLogger.debug("Grabed %s logs path" %id)
 	return output
 
 def getLogPath(logs, id, name):
-	pattern = re.compile(r'%s.*%s$' %(id, name))
+	pattern = re.compile(r'.*%s/%s' %(id, name))
 	m = pattern.search(logs)
-	path = m.group(0)
+	if m:
+		path = m.group(0)
+	else:
+		path = ''
 	return path
 
 def shellCmd(cmd):
@@ -55,16 +59,20 @@ class ErrataInfo:
 
 	xmlRpc = 'http://errata-xmlrpc.devel.redhat.com/errata/errata_service'
 	rl2distro = {
-		'RHEL-6.2.Z' : 'RHEL-6.2',
-		'RHEL-6.3.Z' : 'RHEL-6.3',
-		'RHEL-6.4.Z' : 'RHEL-6.4',
-		'RHEL-5.9.Z' : 'RHEL5-Server-U9',
-		'RHEL-5.6.Z' : 'RHEL5-Server-U6'
+		'RHEL-6.2.Z'  : 'RHEL-6.2',
+		'RHEL-6.3.Z'  : 'RHEL-6.3',
+		'RHEL-6.4.Z'  : 'RHEL-6.4',
+		'RHEL-5.10.Z' : 'RHEL5-Server-U10',
+		'RHEL-5.9.Z'  : 'RHEL5-Server-U9',
+		'RHEL-5.6.Z'  : 'RHEL5-Server-U6'
 	}
 
 	
-	def __init__(self, name):
-		self.errataName = name
+	def __init__(self, name, lname = ''):
+
+		self.errataName  = name
+		self.errataLname = lname
+
 		try:
 			self.errata = xmlrpclib.ServerProxy(ErrataInfo.xmlRpc)
 			self.errata.ping()
@@ -78,7 +86,7 @@ class ErrataInfo:
 		self.rhel_version = packages[0]['rhel_version']
 		self.version = packages[0]['version']
 		self.distro  = self.rl2distro[self.rhel_version]
-		pattern = re.compile(r'RHEL-(\d)\.(\d)\.(.*)')
+		pattern = re.compile(r'RHEL-(\d+)\.(\d+)\.(.*)')
 		m = pattern.match(self.rhel_version)
 		self.major = int(m.group(1))
 		self.minor = int(m.group(2))
@@ -123,10 +131,14 @@ class ErrataInfo:
 				genLogger.debug("Find current errata: %s" %self.errataName)
 
 			elif find_cur_errata:
-				packages = self.errata.get_base_packages_rhts\
-					   (errata['advisory_name'])
-				if packages[0]['rhel_version'] != self.rhel_version:
-					continue
+				if self.errataLname:
+					packages = self.errata.get_base_packages_rhts\
+						   (self.errataLname)
+				else:
+					packages = self.errata.get_base_packages_rhts\
+						   (errata['advisory_name'])
+					if not packages or packages[0]['rhel_version'] != self.rhel_version:
+						continue
 				for pkg in packages[0]['packages']:
 					if pkg == "kernel":
 						self.lversion    = packages[0]['version']

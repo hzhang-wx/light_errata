@@ -5,6 +5,8 @@ from feedme.jobresult import *
 from misc.configobj   import ConfigObj
 import getopt
 import codecs
+import os
+import asciitable
 
 
 class ParseJob:
@@ -12,12 +14,13 @@ class ParseJob:
 		self.autoRerun        = ''
 		self.parseKnownIssues = ''
 		self.errataName       = ''
+		self.errataLname      = ''
 		self.__parseArgs()
-		self.errataInfo       = ErrataInfo(self.errataName)
+		self.errataInfo       = ErrataInfo(self.errataName, self.errataLname)
 
 		self.resultPath       = "./result"
 		self.jobStatePath     = '%s/%s.%s' %(self.resultPath, \
-				self.errataName[0:-3], 'jobstate')
+				self.errataInfo.errataId, 'jobstate')
 		genLogger.info("jobStatePath      : %s", self.jobStatePath)
 		self.jobState = ConfigObj(self.jobStatePath, encoding="utf8")
 
@@ -33,6 +36,25 @@ class ParseJob:
 			genLogger.info("knownIssuesPath%s" %str)
 			self.knownIssues.append(ConfigObj(self.knownIssuesPath[i], encoding="utf8"))
 
+		self.knownIssuesResult   = '%s/%s.%s' %(self.resultPath, \
+				self.errataInfo.errataId, 'knownIssues')
+		self.unknownIssuesResult = '%s/%s.%s' %(self.resultPath, \
+				self.errataInfo.errataId, 'unknownIssues')
+		self.tableTemple = {'Path': ['---'], 'TaskName': ['---'], 'TaskResult': ['---'],\
+				'TaskStatus': ['---'], 'ResultPath': ['---'], 'PathResult': ['---'], \
+				'Checked': ['---']}
+		self.columns = ['Path', 'TaskName', 'TaskResult', 'TaskStatus', \
+				'ResultPath', 'PathResult', 'Checked']
+		if not os.path.exists(self.knownIssuesResult):
+			asciitable.write(self.tableTemple, self.knownIssuesResult, \
+					names = self.columns, Writer=asciitable.FixedWidth)
+		if not os.path.exists(self.unknownIssuesResult):
+			asciitable.write(self.tableTemple, self.unknownIssuesResult, \
+					names = self.columns, Writer=asciitable.FixedWidth)
+		reader = asciitable.get_reader(Reader=asciitable.FixedWidth)
+		self.knownIssuesTable   = reader.read(self.knownIssuesResult)
+		self.unknownIssuesTable = reader.read(self.unknownIssuesResult)
+
 	@classmethod
 	def usage(cls):
 		print("Usage: %s -T parseJobs -e errataName [-r -p -h]" \
@@ -40,7 +62,7 @@ class ParseJob:
 		exit(1)
 
 	def __parseArgs(self):
-		opts,args = getopt.getopt(sys.argv[1:], "T:e:rph")
+		opts,args = getopt.getopt(sys.argv[1:], "T:e:l:rph")
 		for opt, arg in opts:
 			if opt == '-h':
 				self.usage()
@@ -50,6 +72,8 @@ class ParseJob:
 				self.parseKnownIssues = 'y'
 			elif opt == '-e':
 				self.errataName = arg
+			elif opt ==  '-l':
+				self.errataLname = arg
 
 		if not self.errataName:
 			self.usage()
@@ -57,18 +81,88 @@ class ParseJob:
 		if not self.autoRerun and not self.parseKnownIssues:
 			self.usage()
 
+	def __isKnownIssue(self, task, path):
+		for known_issue in self.knownIssues:
+			if known_issue.has_key(task):
+				if known_issue[task].has_key(path):
+					return known_issue[task][path]
+		return False
+
+	def __add2Table(self, ctx, result, known_issues):
+		(job, rs, r, gr, t) = (ctx['job'], ctx['rs'], ctx['r'], ctx['gr'], ctx['t'])
+		if gr:
+			path = '%s/J:%s/RS:%s/R:%s/GR:%s/T:%s' %(job.type, \
+					job.result['id'], rs.result['id'], r.result['id'], \
+							gr.result['id'], t.result['id'])
+		else:
+			path = '%s/J:%s/RS:%s/R:%s/T:%s' %(job.type, \
+					job.result['id'], rs.result['id'], r.result['id'], \
+							t.result['id'])
+		task_name   = t.result['name']
+		task_result = t.result['result']
+		task_status = t.result['status']
+		result_path = result.result['path']
+		path_result = result.result['result']
+
+
+		if known_issues == 'yes':
+			index = len(self.knownIssuesTable['Path'])
+			start = False
+			for i, v in enumerate(self.knownIssuesTable['Path']):
+				if v.split('/')[0] == job.type: 
+					start = True
+					if start and v.split('/')[0] != job.type:
+						index = i
+						break
+			checked     = '*'
+			self.knownIssuesTable['Path'].insert(index, path.encode('ascii', 'replace'))
+			self.knownIssuesTable['TaskName'].insert(index, task_name.encode('ascii', 'replace'))
+			self.knownIssuesTable['TaskResult'].insert(index, task_result.encode('ascii', 'replace'))
+			self.knownIssuesTable['TaskStatus'].insert(index, task_status.encode('ascii', 'replace'))
+			self.knownIssuesTable['ResultPath'].insert(index, result_path.encode('ascii', 'replace'))
+			self.knownIssuesTable['PathResult'].insert(index, path_result.encode('ascii', 'replace'))
+			self.knownIssuesTable['Checked'].insert(index, checked.encode('ascii', 'replace'))
+		else:
+			index = len(self.unknownIssuesTable['Path'])
+			start = False
+			for i, v in enumerate(self.unknownIssuesTable['Path']):
+				if v.split('/')[0] == job.type: 
+					start = True
+					if start and v.split('/')[0] != job.type:
+						index = i
+						break
+			checked     = 'No'
+			self.unknownIssuesTable['Path'].insert(index, path.encode('ascii', 'replace'))
+			self.unknownIssuesTable['TaskName'].insert(index, task_name.encode('ascii', 'replace'))
+			self.unknownIssuesTable['TaskResult'].insert(index, task_result.encode('ascii', 'replace'))
+			self.unknownIssuesTable['TaskStatus'].insert(index, task_status.encode('ascii', 'replace'))
+			self.unknownIssuesTable['ResultPath'].insert(index, result_path.encode('ascii', 'replace'))
+			self.unknownIssuesTable['PathResult'].insert(index, path_result.encode('ascii', 'replace'))
+			self.unknownIssuesTable['Checked'].insert(index, checked.encode('ascii', 'replace'))
+
 	def __parseTask(self, ctx):
 		(job, rs, r, gr, t) = (ctx['job'], ctx['rs'], ctx['r'], ctx['gr'], ctx['t'])
 		for result in t.result['results'].results:
+			task = t.result['name']
+			path = result.result['path']
 			if result.result['result'] == 'Fail':
-				print getLogPath(job.logsPath, result.result['id'], \
-						self.knownIssues['%s' %result.result['path']]['logname'])
+				issues =  self.__isKnownIssue(task, path)
+				if issues:
+					self.__add2Table(ctx, result, 'yes')
+				else:
+					self.__add2Table(ctx, result, 'no')
 			if result.result['result'] == 'Panic':
-				pass
-				# As unknown issue
+					self.__add2Table(ctx, result, 'no')
+					return 'SKIP_LEFT'
 			if result.result['result'] == 'Warn' and t.result['status'] == 'Aborted':
-				pass
-				# ToDo parse
+					if t.result['name'] == '/distribution/install':
+						self.__add2Table(ctx, result, 'yes')
+						return 'SKIP_LEFT'
+					elif result.result['path'] == '/':
+						self.__add2Table(ctx, result, 'no')
+						return 'SKIP_LEFT'
+					else:
+						self.__add2Table(ctx, result, 'no')
 
 	def __parseKnownIssues(self, jobs):
 		for job in jobs:
@@ -108,7 +202,7 @@ class ParseJob:
 						for gt in gr.result['task']:
 							if gt.result['result'] == 'Pass':
 								continue
-							ctx = { 'job': job, 'rs': rs, 'r': r, 'gr': gr, 't': t } 
+							ctx = { 'job': job, 'rs': rs, 'r': r, 'gr': gr, 't': gt } 
 							ret = self.__parseTask(ctx)
 							if ret == 'SKIP_LEFT':
 								skip_left_gr = True
@@ -116,7 +210,12 @@ class ParseJob:
 
 		self.__updateJobState(jobs, 'Parsed')
 		self.jobState.write()
-			
+
+		asciitable.write(self.knownIssuesTable, self.knownIssuesResult, \
+				names = self.columns, Writer=asciitable.FixedWidth)
+		asciitable.write(self.unknownIssuesTable, self.unknownIssuesResult, \
+				names = self.columns, Writer=asciitable.FixedWidth)
+
 	def __addedRS2Rerun(self, id, jobxml):
 		cloneJobXml("RS:%s" %id)
 		xml = minidom.parse("%s/RS:%s.xml" %(TMP_DIR, id))
@@ -130,6 +229,8 @@ class ParseJob:
 
 	def __updateJobState(self, jobs, flag):
 		for job in jobs:
+			if job.result['status'] != 'Completed' and job.result['status'] != 'Aborted':
+				continue
 			if not self.jobState[job.type]['J:%s' %job.result['id']]['wb']:
 				self.jobState[job.type]['J:%s' %job.result['id']]['wb'] = job.result['wb']
 			if (flag == 'Reruned' and job.reruned) or (flag == 'Parsed' and job.parsed):
@@ -162,7 +263,7 @@ class ParseJob:
 					if r.result['result'] == 'Pass':
 						continue
 					if r.result['status'] == 'Aborted' or r.result['result'] == 'Panic' or \
-							r.result['result'] == 'Cancelled':
+							r.result['status'] == 'Cancelled':
 						genLogger.info('%s J:%s RS:%s adding to rerun since R:%s %s' \
 								%(job.type, job.result['id'], rs.result['id'], r.result['id'], r.result['status']))
 						jobxml = self.__addedRS2Rerun(rs.result['id'], jobxml)
@@ -234,7 +335,7 @@ class ParseJob:
 					if flag == 'Reruned' and self.autoRerun == 'y':
 						reruned = 'y'
 						genLogger.info("Job %s has been Reruned, SKIP" %jid)
-					if flag != 'Reruned' and flag != 'Parsed':
+					if flag != 'Reruned' and flag != 'Parsed' and flag:
 						genLogger.error("Unknow %s %s status flag: %s" %(t, jid, flag))
 						exit(1)
 				if (parsed == 'y' or not self.parseKnownIssues) and \
@@ -244,13 +345,20 @@ class ParseJob:
 				jobs[-1].type    = t
 				jobs[-1].parsed  = parsed
 				jobs[-1].reruned = reruned
-			if self.parseKnownIssues == 'y' and parsed != 'y':
+			if not jobs:
+				continue
+			if self.parseKnownIssues == 'y':
 				genLogger.info("Start to parse %s jobs known issues..." %t)
 				self.__parseKnownIssues(jobs)
 				genLogger.info("%s jobs known issues parsed end" %t)
-			if self.autoRerun == 'y' and reruned != 'y':
+			if self.autoRerun == 'y':
 				genLogger.info("Start to parse %s jobs needed to rerun..." %t)
 				self.__autoRerun(jobs)
 				genLogger.info("%s jobs reruned end" %t)
+				genLogger.info("Please check reruned jobs in beaker")
 			genLogger.info("End to parse %s jobs" %t)
 		genLogger.info("All jobs parsed")
+		if self.parseKnownIssues == 'y':
+			genLogger.info("Please check the parsed results in below files:")
+			genLogger.info("unKnown Issues: %s" %self.unknownIssuesResult)
+			genLogger.info("Known   Issues: %s" %self.knownIssuesResult)

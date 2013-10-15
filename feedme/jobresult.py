@@ -85,14 +85,17 @@ class RecipeResult:
 		self.result['id']     = node.getAttributeNode('id').value
 		self.result['status'] = node.getAttributeNode('status').value
 		self.result['result'] = node.getAttributeNode('result').value
-		self.result['system'] = node.getAttributeNode('system').value
+		if node.getAttributeNode('system'):
+			self.result['system'] = node.getAttributeNode('system').value
+		else:
+			self.result['system'] = ''
 		self.result['distro'] = node.getAttributeNode('distro').value
 		self.result['wb']     = node.getAttributeNode('whiteboard').value
 		for n in node.childNodes:
 			if n.nodeName == "task":
 				self.result['task'].append(TaskResult(n))
 			if n.nodeName == "guestrecipe":
-				self.result['task'].append(GuestRecipeResult(n))
+				self.result['guestrecipe'].append(GuestRecipeResult(n))
 
 class RSResult:
 	def __init__(self, node):
@@ -131,7 +134,7 @@ class JobResult:
 		self.result['result']	 = job.getAttributeNode('result').value
 		self.result['status']	 = job.getAttributeNode('status').value
 		self.result['wb']        = job.getElementsByTagName('whiteboard')[0].childNodes[0].nodeValue
-		self.logsPath = grabLogsPath('J:%s' %self.result['id'])
+		#self.logsPath = grabLogsPath('J:%s' %self.result['id'])
 		for n in job.childNodes:
 			if n.nodeName == "recipeSet":
 				self.result['recipeSet'].append(RSResult(n))
