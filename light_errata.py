@@ -3,12 +3,13 @@ from misc.logger          import *
 from misc.config          import *
 from utils.jobsubmit	  import *
 from utils.parsejob	      import *
+from utils.gencomment	  import *
 import getopt
 import sys
 
 class MainControl:
 	function    = ''
-	supportFuns = ['submitJobs', 'parseJobs']
+	supportFuns = ['submitJobs', 'parseJobs', 'genComment']
 
 	def __init__(self):
 		pass
@@ -43,6 +44,8 @@ class MainControl:
 					cls.function = JobSubmit()
 				if arg == 'parseJobs':
 					cls.function = ParseJob()
+				if arg == 'genComment':
+					cls.function = genComment()
 
 		if not t_flag:
 			cls.usage()
