@@ -1,8 +1,10 @@
 #!/bin/python
-from   misc.logger import *
+from   misc.logger      import *
+from   misc.configobj   import ConfigObj
 import commands
 import xmlrpclib
 import re
+import os 
 
 TMP_DIR='./tmp'
 
@@ -72,19 +74,29 @@ class ErrataInfo:
 
 		self.errataName  = name
 		self.errataLname = lname
+		self.cachePath   = './result/errinfo.cache'
+		self.cache       = ''
 
-		try:
-			self.errata = xmlrpclib.ServerProxy(ErrataInfo.xmlRpc)
-			self.errata.ping()
-		except:
-			genLogger.error("Could not connect to Errata. QUIT!")
-			exit(1)
+		if not self.__getInfoFromCache():
+			self.cache[self.errataName] = {}
+			try:
+				self.errata = xmlrpclib.ServerProxy(ErrataInfo.xmlRpc)
+				self.errata.ping()
+			except:
+				genLogger.error("Could not connect to Errata. QUIT!")
+				exit(1)
+	
+			packages = self.errata.get_base_packages_rhts(self.errataName)
+			genLogger.debug("errata packages    : %s" %packages)
+	
+			self.rhel_version = packages[0]['rhel_version']
+			self.version = packages[0]['version']
+			self.cache[self.errataName]['rhel_version'] = self.rhel_version 
+			self.cache[self.errataName]['version']      = self.version 
+			self.__findLastErrata()
+			self.cache.write()
 
-		packages = self.errata.get_base_packages_rhts(self.errataName)
-		genLogger.debug("errata packages    : %s" %packages)
 
-		self.rhel_version = packages[0]['rhel_version']
-		self.version = packages[0]['version']
 		self.distro  = self.rl2distro[self.rhel_version]
 		pattern = re.compile(r'RHEL-(\d+)\.(\d+)\.(.*)')
 		m = pattern.match(self.rhel_version)
@@ -93,7 +105,6 @@ class ErrataInfo:
 		self.zflag = m.group(3)	
 		if self.major == 6 and self.minor == 3:
 			self.zflag = 'EUS'
-		self.__findLastErrata()
 
 		self.bkrcommon = 'bkr workflow-kernel --prettyxml '\
 			    '--hostrequire="group!=storage-qe" '\
@@ -106,14 +117,37 @@ class ErrataInfo:
 			self.bkrfj = self.bkrcommon
 			self.bkrcommon = "%s %s" %(self.bkrcommon, arch)
 
+		genLogger.info("errataName          : %s" %self.errataName)
+		genLogger.info("errataId            : %s" %self.errataId)
 		genLogger.info("rhel_version        : %s" %self.rhel_version)	
 		genLogger.info("kernel_version      : %s" %self.version)	
+		genLogger.info("last_kernel_version : %s" %self.lversion)	
 		genLogger.debug("kernel major       : %s" %self.major)	
 		genLogger.debug("kernel minor       : %s" %self.minor)	
 		genLogger.debug("zflag              : %s" %self.zflag)	
-		genLogger.info("last_kernel_version : %s" %self.lversion)	
+		genLogger.info("lastErrataName      : %s" %self.errataLname)
+		genLogger.info("lastErrataId        : %s" %self.errataLid)
 		genLogger.info("distro              : %s" %self.distro)	
 		genLogger.debug("bkr common cmd     : %s" %self.bkrcommon)	
+	
+	def __getInfoFromCache(self):
+		if not os.path.exists(self.cachePath):
+			os.mknod(self.cachePath)
+			self.cache = ConfigObj(self.cachePath)
+			return False
+		else:
+			self.cache = ConfigObj(self.cachePath)
+
+		if self.cache.has_key(self.errataName):
+			self.rhel_version = self.cache[self.errataName]['rhel_version']
+			self.version      = self.cache[self.errataName]['version']
+			self.errataId     = self.cache[self.errataName]['errataId']
+			self.lversion     = self.cache[self.errataName]['lversion']
+			self.errataLname  = self.cache[self.errataName]['errataLname']
+			self.errataLid    = self.cache[self.errataName]['errataLid']
+			return True
+		else:
+			return False
 	
 	def __findLastErrata(self):
 		errataLists = self.errata.get_advisory_list(\
@@ -126,8 +160,7 @@ class ErrataInfo:
 				find_cur_errata = 1
 				self.errataName = errata['advisory_name']
 				self.errataId   = errata['errata_id']
-				genLogger.info("errataName          : %s" %self.errataName)
-				genLogger.info("errataId            : %s" %self.errataId)
+				self.cache[self.errataName]['errataId'] = self.errataId
 				genLogger.debug("Find current errata: %s" %self.errataName)
 
 			elif find_cur_errata:
@@ -144,10 +177,10 @@ class ErrataInfo:
 						self.lversion    = packages[0]['version']
 						self.errataLname = errata['advisory_name']
 						self.errataLid   = errata['errata_id']
-						genLogger.info(\
-						"lastErrataName      : %s" %self.errataLname)
-						genLogger.info(\
-						"lastErrataId        : %s" %self.errataLid)
+						self.cache[self.errataName]['lversion']    = self.lversion
+						self.cache[self.errataName]['errataLname'] = self.errataLname
+						self.cache[self.errataName]['errataLid']   = self.errataLid
+						genLogger.debug("Find last errata: %s" %self.errataLname)
 						return
 
 		genLogger.error("ErrataLists        : %s" %errataLists)

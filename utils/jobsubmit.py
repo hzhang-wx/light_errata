@@ -41,7 +41,7 @@ class JobSubmit(ErrataInfo):
 
 	@classmethod
 	def usage(cls):
-		print "Usage: %s -T submitJobs -e errataName [-l lasterataName] [-t "\
+		print "Usage: %s -T submitJobs -e errataName [-l lastErrataName] [-t "\
 				"[%s] -h]" %(sys.argv[0], cls.allTests)
 		exit(1)
 	

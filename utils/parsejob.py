@@ -57,7 +57,7 @@ class ParseJob:
 
 	@classmethod
 	def usage(cls):
-		print("Usage: %s -T parseJobs -e errataName [-r -p -h]" \
+		print("Usage: %s -T parseJobs -e errataName [-l lastErrataName] [-r -p -h]" \
 				%sys.argv[0])
 		exit(1)
 
