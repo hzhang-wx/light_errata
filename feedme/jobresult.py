@@ -9,7 +9,7 @@ class Result:
 	def __init__(self, node):
 		self.result = { 'id'    : '',
 						'path'  : '',
-						'result': ''
+						'result': [] 
 	   }
 		self.__feedMe(node)
 
@@ -34,7 +34,7 @@ class TaskResult:
 						'name'   : '',
 						'status' : '',
 						'result' : '',
-						'results': '',
+						'results': [],
 	   }
 		self.__feedMe(node)
 
