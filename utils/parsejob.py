@@ -142,6 +142,8 @@ class ParseJob:
 
 	def __parseTask(self, ctx):
 		(job, rs, r, gr, t) = (ctx['job'], ctx['rs'], ctx['r'], ctx['gr'], ctx['t'])
+		if not t.result['results']:
+			return
 		for result in t.result['results'].results:
 			task = t.result['name']
 			path = result.result['path']
