@@ -24,7 +24,6 @@ def grabLogsPath(id):
 	cmd = 'bkr job-logs %s' %id
 	genLogger.debug("Grabing %s logs path" %id)
 	output = shellCmd(cmd)
-	genLogger.debug("Grabed %s logs path" %id)
 	return output
 
 def getLogPath(logs, id, name):
@@ -35,6 +34,12 @@ def getLogPath(logs, id, name):
 	else:
 		path = ''
 	return path
+
+def setResponse(id, value):
+	cmd = 'bkr job-modify --response=%s RS:%s' %(value, id)
+	genLogger.info("Modify RS:%s %s" %(id, value))
+	output = shellCmd(cmd)
+	return output
 
 def shellCmd(cmd):
 	(ret, output) = commands.getstatusoutput(cmd)

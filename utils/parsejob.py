@@ -15,6 +15,8 @@ class ParseJob:
 		self.parseKnownIssues = ''
 		self.errataName       = ''
 		self.errataLname      = ''
+		self.rerunedRSId      = []
+		self.force            = False
 		self.__parseArgs()
 		self.errataInfo       = ErrataInfo(self.errataName, self.errataLname)
 
@@ -57,12 +59,12 @@ class ParseJob:
 
 	@classmethod
 	def usage(cls):
-		print("Usage: %s -T parseJobs -e errataName [-l lastErrataName] [-r -p -h]" \
+		print("Usage: %s -T parseJobs -e errataName [-l lastErrataName] [-r -p -f -h]" \
 				%sys.argv[0])
 		exit(1)
 
 	def __parseArgs(self):
-		opts,args = getopt.getopt(sys.argv[1:], "T:e:l:rph")
+		opts,args = getopt.getopt(sys.argv[1:], "T:e:l:rpfh")
 		for opt, arg in opts:
 			if opt == '-h':
 				self.usage()
@@ -70,9 +72,11 @@ class ParseJob:
 				self.autoRerun        = 'y'
 			elif opt == '-p':
 				self.parseKnownIssues = 'y'
+			elif opt == '-f':
+				self.force = True
 			elif opt == '-e':
 				self.errataName = arg
-			elif opt ==  '-l':
+			elif opt == '-l':
 				self.errataLname = arg
 
 		if not self.errataName:
@@ -179,6 +183,8 @@ class ParseJob:
 						%(job.type, job.result['id'], job.result['result']))
 				continue
 			for rs in job.result['recipeSet']:
+				if rs.result['response'] == 'nak':
+					continue
 				skip_left = ''
 				for r in rs.result['recipe']:
 					if r.result['result'] == 'Pass':
@@ -219,6 +225,7 @@ class ParseJob:
 				names = self.columns, Writer=asciitable.FixedWidth)
 
 	def __addedRS2Rerun(self, id, jobxml):
+		self.rerunedRSId.append(id)
 		cloneJobXml("RS:%s" %id)
 		xml = minidom.parse("%s/RS:%s.xml" %(TMP_DIR, id))
 		if not jobxml:
@@ -228,6 +235,11 @@ class ParseJob:
 			if n.nodeName == "recipeSet":
 				jobxml.documentElement.appendChild(n)
 		return jobxml
+
+	def __setResponse(self, value):
+		for rsid in self.rerunedRSId:
+			setResponse(rsid, value)
+		self.rerunedRSId = []
 
 	def __updateJobState(self, jobs, flag):
 		for job in jobs:
@@ -247,7 +259,8 @@ class ParseJob:
 		for job in jobs:
 			if job.reruned:
 				continue
-			if job.result['status'] != 'Completed' and job.result['status'] != 'Aborted':
+			if job.result['status'] != 'Completed' and \
+				job.result['status'] != 'Aborted' and not self.force:
 				genLogger.warn("%s J:%s status %s, not Completed or Aborted, SKIP" \
 						%(job.type, job.result['id'], job.result['status']))
 				continue
@@ -259,6 +272,8 @@ class ParseJob:
 				end_by_task       = False
 				end_by_guest      = False
 				end_by_guest_task = False
+				if rs.result['response'] == 'nak':
+					continue
 				for r in rs.result['recipe']:
 					if end_by_task or end_by_guest or end_by_guest_task:
 						break
@@ -320,6 +335,8 @@ class ParseJob:
 
 		self.jobState[jobs[0].type][jobid] = { 'wb': new_wb, 'status': ''}
 		self.jobState.write()
+
+		self.__setResponse('nak')
 			
 	def start(self):
 		for t in self.jobState:

@@ -99,13 +99,16 @@ class RecipeResult:
 
 class RSResult:
 	def __init__(self, node):
-		self.result = { 'id'    : '',
-				        'recipe': []
+		self.result = { 'id'      : '',
+						'response': '',
+				        'recipe'  : []
 	   }
 		self.__feedMe(node)
 
 	def __feedMe(self, node):
-		self.result['id'] = node.getAttributeNode('id').value
+		self.result['id']       = node.getAttributeNode('id').value
+		if node.getAttributeNode('response'):
+			self.result['response'] = node.getAttributeNode('response').value
 		for n in node.childNodes:
 			if n.nodeName == "recipe":
 				self.result['recipe'].append(RecipeResult(n))
