@@ -74,6 +74,7 @@ class JobSubmit(ErrataInfo):
 			if len(self.jobState):
 				add_blank_line = 'echo >> %s' %self.jobStatePath
 				shellCmd(add_blank_line)
+				self.jobState.reload()
 			self.jobState[type] = {}
 			self.jobState[type][id] = {'wb': '', 'status': ''}
 			self.jobState.write()
