@@ -18,7 +18,7 @@ class ParseJob:
 		self.rerunedRSId      = []
 		self.force            = False
 		self.__parseArgs()
-		self.errataInfo       = ErrataInfo(self.errataName, self.errataLname)
+		self.errataInfo       = ErrataInfo(self.errataName, self.errataLname, False)
 
 		self.resultPath       = "./result"
 		self.jobStatePath     = '%s/%s.%s' %(self.resultPath, \
@@ -26,36 +26,37 @@ class ParseJob:
 		genLogger.info("jobStatePath      : %s", self.jobStatePath)
 		self.jobState = ConfigObj(self.jobStatePath, encoding="utf8")
 
-		self.knownIssuesPath  = []
-		self.knownIssues      = []
-		self.knownIssuesRPath = "./known_issues"
-		self.knownIssuesPath.append('%s/%s.%s' %(self.knownIssuesRPath, \
-				self.errataInfo.rhel_version, "known_issues"))
-		self.knownIssuesPath.append('%s/RHEL-%s.%s' %(self.knownIssuesRPath, \
-				self.errataInfo.major, "known_issues"))
-		for i in range(0, len(self.knownIssuesPath)):
-			str = "%d  : %s" %(i, self.knownIssuesPath[i])
-			genLogger.info("knownIssuesPath%s" %str)
-			self.knownIssues.append(ConfigObj(self.knownIssuesPath[i], encoding="utf8"))
-
-		self.knownIssuesResult   = '%s/%s.%s' %(self.resultPath, \
-				self.errataInfo.errataId, 'knownIssues')
-		self.unknownIssuesResult = '%s/%s.%s' %(self.resultPath, \
-				self.errataInfo.errataId, 'unknownIssues')
-		self.tableTemple = {'Path': ['---'], 'TaskName': ['---'], 'TaskResult': ['---'],\
-				'TaskStatus': ['---'], 'ResultPath': ['---'], 'PathResult': ['---'], \
-				'Checked': ['---']}
-		self.columns = ['Path', 'TaskName', 'TaskResult', 'TaskStatus', \
-				'ResultPath', 'PathResult', 'Checked']
-		if not os.path.exists(self.knownIssuesResult):
-			asciitable.write(self.tableTemple, self.knownIssuesResult, \
-					names = self.columns, Writer=asciitable.FixedWidth)
-		if not os.path.exists(self.unknownIssuesResult):
-			asciitable.write(self.tableTemple, self.unknownIssuesResult, \
-					names = self.columns, Writer=asciitable.FixedWidth)
-		reader = asciitable.get_reader(Reader=asciitable.FixedWidth)
-		self.knownIssuesTable   = reader.read(self.knownIssuesResult)
-		self.unknownIssuesTable = reader.read(self.unknownIssuesResult)
+		if self.parseKnownIssues == 'y':
+			self.knownIssuesPath  = []
+			self.knownIssues      = []
+			self.knownIssuesRPath = "./known_issues"
+			self.knownIssuesPath.append('%s/%s.%s' %(self.knownIssuesRPath, \
+					self.errataInfo.rhel_version, "known_issues"))
+			self.knownIssuesPath.append('%s/RHEL-%s.%s' %(self.knownIssuesRPath, \
+					self.errataInfo.major, "known_issues"))
+			for i in range(0, len(self.knownIssuesPath)):
+				str = "%d  : %s" %(i, self.knownIssuesPath[i])
+				genLogger.info("knownIssuesPath%s" %str)
+				self.knownIssues.append(ConfigObj(self.knownIssuesPath[i], encoding="utf8"))
+	
+			self.knownIssuesResult   = '%s/%s.%s' %(self.resultPath, \
+					self.errataInfo.errataId, 'knownIssues')
+			self.unknownIssuesResult = '%s/%s.%s' %(self.resultPath, \
+					self.errataInfo.errataId, 'unknownIssues')
+			self.tableTemple = {'Path': ['---'], 'TaskName': ['---'], 'TaskResult': ['---'],\
+					'TaskStatus': ['---'], 'ResultPath': ['---'], 'PathResult': ['---'], \
+					'Checked': ['---']}
+			self.columns = ['Path', 'TaskName', 'TaskResult', 'TaskStatus', \
+					'ResultPath', 'PathResult', 'Checked']
+			if not os.path.exists(self.knownIssuesResult):
+				asciitable.write(self.tableTemple, self.knownIssuesResult, \
+						names = self.columns, Writer=asciitable.FixedWidth)
+			if not os.path.exists(self.unknownIssuesResult):
+				asciitable.write(self.tableTemple, self.unknownIssuesResult, \
+						names = self.columns, Writer=asciitable.FixedWidth)
+			reader = asciitable.get_reader(Reader=asciitable.FixedWidth)
+			self.knownIssuesTable   = reader.read(self.knownIssuesResult)
+			self.unknownIssuesTable = reader.read(self.unknownIssuesResult)
 
 	@classmethod
 	def usage(cls):

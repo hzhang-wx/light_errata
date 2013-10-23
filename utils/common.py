@@ -75,21 +75,43 @@ class ErrataInfo:
 	}
 
 	
-	def __init__(self, name, lname = ''):
+	def __init__(self, name, lname = '', findLast = True):
 
 		self.errataName  = name
 		self.errataLname = lname
+		self.errataId    = ''
+		self.lversion    = ''
+		self.errataLname = ''
+		self.errataLid   = ''
 		self.cachePath   = './result/errinfo.cache'
-		self.cache       = ''
+		self.cache       = {}
+		self.errataLists = {}
 
-		if not self.__getInfoFromCache():
+		if not self.__getInfoFromCache() or \
+				not self.cache[self.errataName]['lversion'] and findLast:
 			self.cache[self.errataName] = {}
+			self.cache[self.errataName]['rhel_version'] = ''
+			self.cache[self.errataName]['version']      = '' 
+			self.cache[self.errataName]['errataId']     = ''
+			self.cache[self.errataName]['lversion']     = ''
+			self.cache[self.errataName]['errataLname']  = ''
+			self.cache[self.errataName]['errataLid']    = ''
 			try:
 				self.errata = xmlrpclib.ServerProxy(ErrataInfo.xmlRpc)
 				self.errata.ping()
 			except:
 				genLogger.error("Could not connect to Errata. QUIT!")
 				exit(1)
+			self.errataLists = self.errata.get_advisory_list(\
+				{"qe_group": "Kernel QE",\
+				"product": "RHEL"})
+			self.errataLists.reverse()
+			for errata in self.errataLists:
+				if errata['advisory_name'] == self.errataName:
+					find_cur_errata = 1
+					self.errataName = errata['advisory_name']
+					self.errataId   = errata['errata_id']
+					self.cache[self.errataName]['errataId'] = self.errataId
 	
 			packages = self.errata.get_base_packages_rhts(self.errataName)
 			genLogger.debug("errata packages    : %s" %packages)
@@ -98,7 +120,8 @@ class ErrataInfo:
 			self.version = packages[0]['version']
 			self.cache[self.errataName]['rhel_version'] = self.rhel_version 
 			self.cache[self.errataName]['version']      = self.version 
-			self.__findLastErrata()
+			if findLast:
+				self.__findLastErrata()
 			self.cache.write()
 
 
@@ -155,12 +178,8 @@ class ErrataInfo:
 			return False
 	
 	def __findLastErrata(self):
-		errataLists = self.errata.get_advisory_list(\
-			{"qe_group": "Kernel QE",\
-			"product": "RHEL"})
 		find_cur_errata  = 0
-		errataLists.reverse()
-		for errata in errataLists:
+		for errata in self.errataLists:
 			if errata['advisory_name'] == self.errataName:
 				find_cur_errata = 1
 				self.errataName = errata['advisory_name']
