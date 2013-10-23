@@ -182,7 +182,7 @@ class JobSubmit(ErrataInfo):
 		self.__shellCmd(cmd_dry)
 		if type == 'Tier2':
 			self.__Tier2Shirk(file)
-		if type == 'Fujitsu':
+		if type == 'FJ':
 			self.__FjShirk(file)
 		cmd = "bkr job-submit %s" %file
 		jobid = self.__submbkr(cmd, type)
