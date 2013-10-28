@@ -188,7 +188,7 @@ class ParseJob:
 					continue
 				skip_left = ''
 				for r in rs.result['recipe']:
-					if r.result['result'] == 'Pass':
+					if r.result['result'] == 'Pass' and not r.result['guestrecipe']:
 						continue
 					if skip_left:
 						skip_left = ''
