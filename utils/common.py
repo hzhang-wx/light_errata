@@ -131,7 +131,7 @@ class ErrataInfo:
 		self.major = int(m.group(1))
 		self.minor = int(m.group(2))
 		self.zflag = m.group(3)	
-		if self.major == 6 and self.minor == 3:
+		if self.major == 6:
 			self.zflag = 'EUS'
 
 		self.bkrcommon = 'bkr workflow-kernel --prettyxml '\
