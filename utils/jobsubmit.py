@@ -107,7 +107,7 @@ class JobSubmit(ErrataInfo):
 		genLogger.info("Tier1 submiting...")
 		task = '--type=KernelTier1 '
 		version = '--nvr=%s ' %self.version
-		extra = '--kvm '
+		extra = '--kvm --hostrequire="labcontroller != lab-02.rhts.eng.nay.redhat.com"'
 		bkrcommand = "%s %s %s %s" %(self.bkrcommon, task, version, extra)
 		self.__submbkr(bkrcommand, "Tier1")
 
