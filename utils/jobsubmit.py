@@ -27,6 +27,7 @@ class JobSubmit(ErrataInfo):
 		self.type2Tested   = ''
 		self.errataName    = ''
 		self.errataLname   = ''
+		self.yang          = ''
 
 		self.__parseArgs()
 
@@ -46,7 +47,7 @@ class JobSubmit(ErrataInfo):
 		exit(1)
 	
 	def __parseArgs(self):
-		opts,args = getopt.getopt(sys.argv[1:], "T:e:l:t:h")
+		opts,args = getopt.getopt(sys.argv[1:], "T:e:l:t:yh")
 		for opt, arg in opts:
 			if opt == '-h':
 				self.usage()
@@ -56,6 +57,8 @@ class JobSubmit(ErrataInfo):
 				self.errataLname = arg
 			elif opt ==  '-t':
 				self.type2Tested = arg
+			elif opt ==  '-y':
+				self.yang = 'y'
 	
 		if not self.errataName:
 			self.usage()
@@ -118,7 +121,18 @@ class JobSubmit(ErrataInfo):
 		extra = '--kvm '
 		bkrcommand = "%s %s %s %s" %(self.bkrcommon, task, version, extra)
 		self.__submbkrShirk(bkrcommand, "Tier2")
+		if self.yang == 'y':
+			self.submTier2Xfs()
 		
+	def submTier2Xfs(self):
+		genLogger.info("Tier2 xfs submiting...")
+		task = '--task=/kernel/errata/xfstests '
+		version = '--nvr=%s ' %self.version
+		extra = '--kvm '
+		wboard = '--whiteboard="%s tier2 xfs test" ' %self.version
+		bkrcommand = "%s %s %s %s %s" %(self.bkrcommon, task, version, extra, wboard)
+		self.__submbkr(bkrcommand, "Tier2")
+
 	def submRegression(self):
 		genLogger.info("Regression submiting...")
 		task   = ''
@@ -206,9 +220,13 @@ class JobSubmit(ErrataInfo):
 	def __Tier2Shirk(self, file):
 		''' 
 		Use /kernel/errata/xfstests to instead of
-		/kernel/filesystems/xfs/xfstests
+		/kernel/filesystems/xfs/xfstests or
+		submit xfstests in another job
 		'''
-		cmd = "sed -i 's/\/kernel\/filesystems\/xfs\/xfstests/\/kernel\/errata\/xfstests/g' %s" %file
+		if self.yang == 'y':
+			cmd = "sed -i '/\/kernel\/filesystems\/xfs\/xfstests/, +2d' %s" %file
+		else:
+			cmd = "sed -i 's/\/kernel\/filesystems\/xfs\/xfstests/\/kernel\/errata\/xfstests/g' %s" %file
 		genLogger.debug(cmd)
 		self.__shellCmd(cmd)
 
