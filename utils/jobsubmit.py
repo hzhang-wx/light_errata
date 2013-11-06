@@ -43,7 +43,7 @@ class JobSubmit(ErrataInfo):
 	@classmethod
 	def usage(cls):
 		print "Usage: %s -T submitJobs -e errataName [-l lastErrataName] [-t "\
-				"[%s] -h]" %(sys.argv[0], cls.allTests)
+				"[%s] -y -h]" %(sys.argv[0], cls.allTests)
 		exit(1)
 	
 	def __parseArgs(self):
