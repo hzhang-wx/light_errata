@@ -1,0 +1,41 @@
+<!-- -*-django-html-*- -->
+<guestrecipe guestname='{{hyper}}_{{varch}}_{{vcpus}}' whiteboard='{{hyper}} {{varch}} vcpus={{vcpus}} vmem={{vmem}}M'
+             guestargs='--arch={{ varch if varch != "i386" else "i686" }} --vcpus={{vcpus}} --ram={{vmem}} --disk pool=default,size=10 {{ {"kvm": "--hvm --kvm", "xen-hvm": "--hvm", "xen-pv": "--paravirt"}[hyper] }}'>
+    {#-
+    Notes:
+    * libvirt support arch i686 instead of i386, virt-install will automated transfer it but on RHEL5 not.
+    * --virt-type is not supported on RHEL5
+    #}
+    <distroRequires>
+	<arch value='{{varch}}'/>
+        <tag value='RHEL-{{dmajor}}_{{dminor}}-Z-branch'/>
+    </distroRequires>
+    <hostRequires>
+	<system>
+            <arch value='{{varch}}'/>
+	</system>
+    </hostRequires>
+    <task name='/distribution/install'/>
+    <task name='/distribution/kernelinstall'>
+	<params>
+            <param name='KERNELARGNAME' value='kernel'/>
+            <param name='KERNELARGVARIANT' value='{{ {"kvm": "up", "xen-hvm": "up", "xen-pv": "xen"}[hyper] }}'/>
+            <param name='KERNELARGVERSION' value='{{kver}}'/>
+	</params>
+    </task>
+    <task name='/kernel/misc/gdb-simple'/>
+    <task name='/kernel/misc/module-load'/>
+
+    {#- additional PAE kernel test #}
+    {%- if dmajor == 5 and varch == 'i386' and hyper in ('kvm', 'xen-hvm') %}
+    <task name='/distribution/kernelinstall'>
+	<params>
+            <param name='KERNELARGNAME' value='kernel'/>
+            <param name='KERNELARGVARIANT' value='PAE'/>
+            <param name='KERNELARGVERSION' value='{{kver}}'/>
+	</params>
+    </task>
+    <task name='/kernel/misc/gdb-simple'/>
+    <task name='/kernel/misc/module-load'/>
+    {%- endif %}
+</guestrecipe>
