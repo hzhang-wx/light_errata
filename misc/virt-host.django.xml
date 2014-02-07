@@ -1,6 +1,7 @@
 <!-- -*-django-html-*- -->
 {#- no official eus product for async update #}
-{%- if (dmajor, dminor) in ((5, 9), (6, 4)) %}
+{#- product name link: https://www.redhat.com/security/data/metrics/cpe-dictionary.xml #}
+{%- if (dmajor, dminor) in ((5, 9), (5, 10), (6, 4), (6, 5)) %}
 <job retention_tag='active' product='cpe:/o:redhat:enterprise_linux:{{dmajor}}'>
 {%- else %}
 <job retention_tag='active' product='cpe:/o:redhat:rhel_eus:{{dmajor}}.{{dminor}}'>

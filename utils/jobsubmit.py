@@ -234,7 +234,7 @@ class JobSubmit(ErrataInfo):
 		'''
 		remove the virt host test from xml
 		'''
-		cmd = ''' grep -n "xen DOM0" Fujitsu_tmp.xml | awk -F ":" '{print $1}' '''
+		cmd = ''' grep -n "xen DOM0" FJ_tmp.xml | awk -F ":" '{print $1}' '''
 		genLogger.debug(cmd)
 		line1 = int(self.__shellCmd(cmd)) - 1
 		cmd = "sed -n  '%d, ${/<\/recipeSet>/=}' %s" %(line1, file)

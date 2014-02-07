@@ -66,12 +66,20 @@ class ErrataInfo:
 
 	xmlRpc = 'http://errata-xmlrpc.devel.redhat.com/errata/errata_service'
 	rl2distro = {
-		'RHEL-6.2.Z'  : 'RHEL-6.2',
-		'RHEL-6.3.Z'  : 'RHEL-6.3',
-		'RHEL-6.4.Z'  : 'RHEL-6.4',
-		'RHEL-5.10.Z' : 'RHEL5-Server-U10',
-		'RHEL-5.9.Z'  : 'RHEL5-Server-U9',
-		'RHEL-5.6.Z'  : 'RHEL5-Server-U6'
+		'RHEL-6.2.Z'     : 'RHEL-6.2',
+		'RHEL-6.2-EUSZ'  : 'RHEL-6.2',
+		'RHEL-6.3.Z'     : 'RHEL-6.3',
+		'RHEL-6.3-EUSZ'  : 'RHEL-6.3',
+		'RHEL-6.4.Z'     : 'RHEL-6.4',
+		'RHEL-6.4-EUSZ'  : 'RHEL-6.4',
+		'RHEL-6.5.Z'     : 'RHEL-6.5',
+		'RHEL-6.5-EUSZ'  : 'RHEL-6.5',
+		'RHEL-5.10.Z'    : 'RHEL5-Server-U10',
+		'RHEL-5.10-EUSZ' : 'RHEL5-Server-U10',
+		'RHEL-5.9.Z'     : 'RHEL5-Server-U9',
+		'RHEL-5.9-EUSZ'  : 'RHEL5-Server-U9',
+		'RHEL-5.6.Z'     : 'RHEL5-Server-U6',
+		'RHEL-5.6-EUSZ'  : 'RHEL5-Server-U6'
 	}
 
 	
@@ -126,7 +134,7 @@ class ErrataInfo:
 
 
 		self.distro  = self.rl2distro[self.rhel_version]
-		pattern = re.compile(r'RHEL-(\d+)\.(\d+)\.(.*)')
+		pattern = re.compile(r'RHEL-(\d+)\.(\d+)[.-](.*)')
 		m = pattern.match(self.rhel_version)
 		self.major = int(m.group(1))
 		self.minor = int(m.group(2))
@@ -194,7 +202,9 @@ class ErrataInfo:
 				else:
 					packages = self.errata.get_base_packages_rhts\
 						   (errata['advisory_name'])
-					if not packages or packages[0]['rhel_version'] != self.rhel_version:
+					genLogger.debug(packages)
+					if not packages or not self.rl2distro.has_key(packages[0]['rhel_version']) or \
+							self.rl2distro[packages[0]['rhel_version']] != self.rl2distro[self.rhel_version]:
 						continue
 				for pkg in packages[0]['packages']:
 					if pkg == "kernel":
@@ -207,6 +217,5 @@ class ErrataInfo:
 						genLogger.debug("Find last errata: %s" %self.errataLname)
 						return
 
-		genLogger.error("ErrataLists        : %s" %errataLists)
 		genLogger.error("Can't find Last Errata, Quit!")
 		return 
